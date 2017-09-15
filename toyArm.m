@@ -1,86 +1,164 @@
-dt = 0.01;
-t_f = 4;
-NUM_ITER = t_f / dt + 1;
+function s_hat = toyArm()
+    dt = 0.01;
+    t_f = 1;
+    NUM_ITER = t_f / dt + 1;
+    n = 6; % dimension of s
+    m = 2; % dimension of z
 
+    % initialize and initial guesses
+    s_hat = zeros(NUM_ITER, n);         % a posteri estimate of s
+    P = zeros(n, n, NUM_ITER);          % a posteri error estimate
+    s_hat_minus = zeros(NUM_ITER, n);   % a priori estimate of s
+    P_minus = zeros(n, n, NUM_ITER);    % a priori error estimate
+    K = zeros(n, m, NUM_ITER);          % gain or blending factor
 
-%% Robo
-L1 = 1;
-L2 = 1.5;
+    s_hat(1, :) = [3, -0.3, 3 * 0.3^2, 8.7, -0.7, 8.7 * 0.7^2];
+    P(:, :, 1) = eye(n, n);
+    
+    % dynamic parameters
+    link1_m = 3.7;
+    link1_COM_x = -0.2;
+    link1_inertia_about_z = link1_m * link1_COM_x^2;
 
-links(1) = Link('d', 0, 'a', L1, 'alpha', pi);
-links(2) = Link('d', 0, 'a', L2, 'alpha', 0);
+    link2_m = 8.2;
+    link2_COM_x = -1.1;
+    link2_inertia_about_z = link2_m * link2_COM_x^2;
 
-GEAR_RATIO = 1; % arbitrary..
-LINK_VFRICTION = 0; % TODO experiment with non-zero values? maybe estimate them as well?
-LINK_MOTOR_INERTIA = 0;
+    s_actual = [link1_m, link1_COM_x, link1_inertia_about_z, link2_m, link2_COM_x, link2_inertia_about_z];
+    robot = buildPlaneMan(s_actual);
 
-% m   dynamic: link mass
-% r   dynamic: link COG wrt link coordinate frame 3x1
-% I   dynamic: link inertia matrix, symmetric 3x3, about link COG.
-% B   dynamic: link viscous friction (motor referred)
-% Tc  dynamic: link Coulomb friction
-% G   actuator: gear ratio
-% Jm  actuator: motor inertia (motor referred)
+    %% specifications
+    % s_k = [m1, com_x1, inertia_about_z1, m2, com_x2, inertia_about_z2];
+    % z_k = [t1, t2];
 
-% dynamic parameters
-link1_m = 3.7;
-link1_COM_x = -0.2;
-link1_inertia_about_z = link1_m * link1_COM_x^2;
+    %% Simulation related stuff
+    torque = repmat( sin(linspace(0, 2*pi, NUM_ITER))', 1, m );
+    % generate measurements
+    measurement_sigma = 0.1;
+    z = torque + normrnd(0, measurement_sigma, NUM_ITER, m);
 
-link2_m = 8.2;
-link2_COM_x = -1.1;
-link2_inertia_about_z = link2_m * link2_COM_x^2;
+    % initial state
+    q = zeros(NUM_ITER, m);
+    qd = zeros(NUM_ITER, m);
+    qdd = zeros(NUM_ITER, m);
 
-links(1).m = link1_m;
-links(1).r = [link1_COM_x 0 0]; % Must be a vector of 3 elements
-links(1).I = [0 0 link1_inertia_about_z]; % Can be 3 or 6 element vector, or a 3x3 matrix
-links(1).B = LINK_VFRICTION;
-links(1).G = GEAR_RATIO;
-links(1).Jm = LINK_MOTOR_INERTIA;
+    for iter = 2:NUM_ITER
+        q_now = q(iter-1, :);
+        qd_now = qd(iter-1, :);
+        t_now = (iter - 1) * dt;
+        [q_end, qd_end] = forwardDynamics(robot, t_now, q_now, qd_now, torque(iter-1, :), dt);
+        q(iter, :) = q_end;
+        qd(iter, :) = qd_end;
+        % calculate qdd myself..
+        qdd(iter, :) = (qd_end - qd_now)/dt;
+    end
+    disp('simulation done!');
 
-links(2).m = link2_m;
-links(2).r = [link2_COM_x 0 0]; % Must be a vector of 3 elements
-links(2).I = [0 0 link2_inertia_about_z]; % Can be 3 or 6 element vector, or a 3x3 matrix
-links(2).B = LINK_VFRICTION;
-links(2).G = GEAR_RATIO;
-links(2).Jm = LINK_MOTOR_INERTIA;
+    %% TODO testing
+%     robot.plot(q);
 
-robot = SerialLink(links, 'name', 'planeMan');
+    % each state is assumed to be independent of each other, so Q is diagonal.
+    % similar for R.
+    % TODO tune these to see what happens. Create a function around these
+    Q = diag(repmat(1.5, n, 1)); % keeping these constant for now
+    R = diag(repmat(measurement_sigma^2, m, 1));
 
-robot.gravity = [0 9.81 0]; % gravity goes in the -y direction
-robot.qlim = [0 pi; 0 3/4*pi];
-robot.plotopt = {'workspace' [-0.5,3, -3,3, -0.5,0.5]};
+    %% Estimation!
+    % small difference in states used for numerical differentiation wrt s
+    ds = 0.005 * ones(n, 1);
+    % calculate Jacobian matrices that stay constant...
+    A = eye(n);
+    W = eye(n);
+    V = eye(m);
+    for k = 2:NUM_ITER
+        % calculate non-constant Jacobian matrices numerically
+        H_k = computeH(s_hat_minus(k, :), q(k,:), qd(k,:), qdd(k,:));
+        
+        % time update
+        s_hat_minus(k, :) = s_hat(k-1, :); % dynamic parameters are not expected to change
+        P_minus(:,:,k) = A*P(:,:,k-1)*A' + W*Q*W';
 
-n = robot.n;
-
-%% specifications
-% s = [m1, com_x1, inertia_about_z1, m2, com_x2, inertia_about_z2, ...
-%      q1, q2, qd1, qd2, ...
-%      t1, t2]';
-
-
-%% Simulation related stuff
-% torque = repmat( sin(linspace(0, 2*pi, NUM_ITER))', 1, 2 );
-torque = zeros(NUM_ITER, 2); % TODO testing
-
-% initial state
-q = zeros(NUM_ITER, n);
-qd = zeros(NUM_ITER, n);
-
-for iter = 2:NUM_ITER
-    q_now = q(iter-1, :);
-    qd_now = qd(iter-1, :);
-    t_now = (iter - 1) * dt;
-    [q_end, qd_end] = forwardDynamics(robot, t_now, q_now, qd_now, torque(iter-1, :), dt);
-    q(iter, :) = q_end;
-    qd(iter, :) = qd_end;
-end
-
-%% TODO testing
-% q
-% qd
-robot.plot(q);
-
-% initial guess
-s_hat = [0.1, -0.7, 0.1 * 0.7^2, 0.1, -0.7, 0.1 * 0.7^2, ...
-         pi/4, pi/4, 0, 0, 0, 0]'; 
+        % measurement update
+        % TODO testing
+%         pminus = P_minus(:,:,k)
+%         kmat = K(:,:,k)
+%         hhh = H_k'
+        
+%         K(:,:,k) = P_minus(:,:,k) * (H_k'\( H_k*P_minus(:,:,k)*H_k' + V*R*V' ));
+        K(:,:,k) = P_minus(:,:,k) * H_k' * inv(H_k*P_minus(:,:,k)*H_k' + V*R*V');
+        z_tilde_k = inverseDynamics(buildPlaneMan(s_hat_minus(k,:)), q(k,:), qd(k,:), qdd(k,:));
+        s_hat(k,:) = s_hat_minus(k) + K(:,:,k) * (z(k,:)' - z_tilde_k);
+        P(:,:,k) = (eye(n) - K(:,:,k) * H_k) * P_minus(:,:,k);
+        
+        disp(strcat('done iteration ', num2str(k)));
+    end
+    
+    % TODO testing
+    s_hat
+    
+    %% Plot results!
+    hold on
+    % Plot of torque measurements
+    t = linspace(0, t_f, NUM_ITER);
+    plot(t, torque(:,1), 'DisplayName', 'actual torque 1');
+    plot(t, torque(:,2), 'DisplayName', 'actual torque 2');
+    scatter(t, z(:,1), 'X', 'DisplayName', 'noisy torque 1 meas');
+    scatter(t, z(:,2), 'O', 'DisplayName', 'noisy torque 2 meas');
+    
+    title('Torque vs. time');
+    xlabel('Time(s)');
+    ylabel('Torque(whatever torque is usually in)');
+    
+    % Plot of mass estimates
+    figure;
+    plot([0, t_f], s_actual(1) * ones(1, 2), 'DisplayName', 'actual mass 1');
+    plot([0, t_f], s_actual(4) * ones(1, 2), 'DisplayName', 'actual mass 2');
+    plot(t, s_hat(:,1), 'DisplayName', 'mass 1 est.');
+    plot(t, s_hat(:,4), 'DisplayName', 'mass 2 est.');
+    
+    title('Mass est vs. time');
+    xlabel('Time(s)');
+    ylabel('mass(kg)');
+    
+    % Plot of COM x pos estimates
+    figure;
+    plot([0, t_f], s_actual(2) * ones(1, 2), 'DisplayName', 'actual COM x 1');
+    plot([0, t_f], s_actual(5) * ones(1, 2), 'DisplayName', 'actual COM x 2');
+    plot(t, s_hat(:,2), 'DisplayName', 'COM x 1 est.');
+    plot(t, s_hat(:,5), 'DisplayName', 'COM x 2 est.');
+    
+    title('COM x est vs. time');
+    xlabel('Time(s)');
+    ylabel('COM x(m)');
+    
+    % Plot of moment of inertia estimates
+    figure;
+    plot([0, t_f], s_actual(3) * ones(1, 2), 'DisplayName', 'actual mass 1');
+    plot([0, t_f], s_actual(6) * ones(1, 2), 'DisplayName', 'actual mass 2');
+    plot(t, s_hat(:,3), 'DisplayName', 'mass 1 est.');
+    plot(t, s_hat(:,6), 'DisplayName', 'mass 2 est.');
+    
+    title('Moment of inertia est vs. time');
+    xlabel('Time(s)');
+    ylabel('Moment of inertia(whatever torque is usually in)');
+    
+    hold off
+    
+    %% helper functions
+    function H = computeH(s_hat_minus_k, q_now, qd_now, qdd_now)
+        % Computes the Jacobian matrix H numerically
+        baseRobo = buildPlaneMan(s_hat_minus_k);
+        baseTorque = inverseDynamics(baseRobo, q_now, qd_now, qdd_now);
+        
+        H = zeros(m, n);
+        % vary each state separately to calculate each column of H
+        for s_idx = 1:n
+            s_deviant = s_hat_minus_k;
+            s_deviant(s_idx) = s_deviant(s_idx) + ds(s_idx);
+            deviantRobo = buildPlaneMan(s_deviant);
+            deviantTorque = inverseDynamics(deviantRobo, q_now, qd_now, qdd_now);
+            H(:, s_idx) = (deviantTorque - baseTorque)./ds(s_idx);
+        end
+    end
+    
+end % function toyArm
