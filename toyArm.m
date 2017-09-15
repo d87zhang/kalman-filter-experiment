@@ -3,28 +3,26 @@ function s_hat = toyArm()
     t_f = 1;
     NUM_ITER = t_f / dt + 1;
     n = 6; % dimension of s
-    m = 2; % dimension of z
-
-    % initialize and initial guesses
-    s_hat = zeros(NUM_ITER, n);         % a posteri estimate of s
-    P = zeros(n, n, NUM_ITER);          % a posteri error estimate
-    s_hat_minus = zeros(NUM_ITER, n);   % a priori estimate of s
-    P_minus = zeros(n, n, NUM_ITER);    % a priori error estimate
-    K = zeros(n, m, NUM_ITER);          % gain or blending factor
-
-    s_hat(1, :) = [3, -0.3, 3 * 0.3^2, 8.7, -0.7, 8.7 * 0.7^2];
-    P(:, :, 1) = eye(n, n);
+    m = 2; % dimension of z    
     
     % dynamic parameters
     link1_m = 3.7;
     link1_COM_x = -0.2;
     link1_inertia_about_z = link1_m * link1_COM_x^2;
-
     link2_m = 8.2;
     link2_COM_x = -1.1;
     link2_inertia_about_z = link2_m * link2_COM_x^2;
+    % initial guesses
+    % TODO This fucks things up
+    ig_link1_m = 3;
+    ig_link1_COM_x = -0.3;
+    ig_link1_inertia_about_z = ig_link1_m * ig_link1_COM_x^2;
+    ig_link2_m = 8.7;
+    ig_link2_COM_x = -0.7;
+    ig_link2_inertia_about_z = ig_link2_m * ig_link2_COM_x^2;
 
-    s_actual = [link1_m, link1_COM_x, link1_inertia_about_z, link2_m, link2_COM_x, link2_inertia_about_z];
+    s_actual = [link1_m, link1_COM_x, link1_inertia_about_z, ...
+                link2_m, link2_COM_x, link2_inertia_about_z];
     robot = buildPlaneMan(s_actual);
 
     %% specifications
@@ -64,6 +62,17 @@ function s_hat = toyArm()
     R = diag(repmat(measurement_sigma^2, m, 1));
 
     %% Estimation!
+    % initialize and initial guesses
+    s_hat = zeros(NUM_ITER, n);         % a posteri estimate of s
+    P = zeros(n, n, NUM_ITER);          % a posteri error estimate
+    s_hat_minus = zeros(NUM_ITER, n);   % a priori estimate of s
+    P_minus = zeros(n, n, NUM_ITER);    % a priori error estimate
+    K = zeros(n, m, NUM_ITER);          % gain or blending factor
+
+    s_hat(1, :) = [ig_link1_m, ig_link1_COM_x, ig_link1_inertia_about_z, ...
+                   ig_link2_m, ig_link2_COM_x, ig_link2_inertia_about_z];
+    P(:, :, 1) = eye(n, n);
+    
     % small difference in states used for numerical differentiation wrt s
     ds = 0.005 * ones(n, 1);
     % calculate Jacobian matrices that stay constant...
@@ -93,9 +102,6 @@ function s_hat = toyArm()
         disp(strcat('done iteration ', num2str(k)));
     end
     
-    % TODO testing
-    s_hat
-    
     %% Plot results!
     hold on
     % Plot of torque measurements
@@ -110,7 +116,7 @@ function s_hat = toyArm()
     ylabel('Torque(whatever torque is usually in)');
     
     % Plot of mass estimates
-    figure;
+    figure; hold on
     plot([0, t_f], s_actual(1) * ones(1, 2), 'DisplayName', 'actual mass 1');
     plot([0, t_f], s_actual(4) * ones(1, 2), 'DisplayName', 'actual mass 2');
     plot(t, s_hat(:,1), 'DisplayName', 'mass 1 est.');
@@ -119,9 +125,10 @@ function s_hat = toyArm()
     title('Mass est vs. time');
     xlabel('Time(s)');
     ylabel('mass(kg)');
+    ylim([min(link1_m, link2_m) - 10, max(link1_m, link2_m) + 10]);
     
     % Plot of COM x pos estimates
-    figure;
+    figure; hold on
     plot([0, t_f], s_actual(2) * ones(1, 2), 'DisplayName', 'actual COM x 1');
     plot([0, t_f], s_actual(5) * ones(1, 2), 'DisplayName', 'actual COM x 2');
     plot(t, s_hat(:,2), 'DisplayName', 'COM x 1 est.');
@@ -130,9 +137,10 @@ function s_hat = toyArm()
     title('COM x est vs. time');
     xlabel('Time(s)');
     ylabel('COM x(m)');
+    ylim([min(link1_COM_x, link2_COM_x) - 3, max(link1_COM_x, link2_COM_x) + 3]);
     
     % Plot of moment of inertia estimates
-    figure;
+    figure; hold on
     plot([0, t_f], s_actual(3) * ones(1, 2), 'DisplayName', 'actual mass 1');
     plot([0, t_f], s_actual(6) * ones(1, 2), 'DisplayName', 'actual mass 2');
     plot(t, s_hat(:,3), 'DisplayName', 'mass 1 est.');
@@ -141,8 +149,8 @@ function s_hat = toyArm()
     title('Moment of inertia est vs. time');
     xlabel('Time(s)');
     ylabel('Moment of inertia(whatever torque is usually in)');
-    
-    hold off
+    ylim([min(link1_inertia_about_z, link2_inertia_about_z) - 10, ...
+          max(link1_inertia_about_z, link2_inertia_about_z) + 10]);
     
     %% helper functions
     function H = computeH(s_hat_minus_k, q_now, qd_now, qdd_now)
