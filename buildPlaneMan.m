@@ -45,6 +45,7 @@ function robot = buildPlaneMan(s)
     robot = SerialLink(links, 'name', 'planeMan');
 
     robot.gravity = [0 9.81 0]; % gravity goes in the -y direction
+%     robot.gravity = [0 0 0]; % TODO test without gravity..
     robot.qlim = [0 pi; 0 3/4*pi];
     robot.plotopt = {'workspace' [-0.5,3, -3,3, -0.5,0.5]};
 end
