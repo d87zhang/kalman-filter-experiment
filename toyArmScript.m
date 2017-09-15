@@ -6,7 +6,7 @@ NUM_ITER = t_f / dt + 1;
 n = 6; % dimension of s
 m = 2; % dimension of z
     
-measurement_sigma = 0.05;
+measurement_sigma = 10;
 assumed_measurement_sigma = measurement_sigma;
 
 %% build robo
@@ -66,10 +66,10 @@ ylabel('Torque(whatever torque is usually in)');
 
 % Plot of mass estimates
 figure; hold on
-plot([0, t_f], s_actual(1) * ones(1, 2), 'DisplayName', 'actual mass 1');
-plot([0, t_f], s_actual(4) * ones(1, 2), 'DisplayName', 'actual mass 2');
-plot(t, s_hat(:,1), 'DisplayName', 'mass 1 est.');
-plot(t, s_hat(:,4), 'DisplayName', 'mass 2 est.');
+plot([0, t_f], s_actual(1) * ones(1, 2), 'DisplayName', 'actual mass 1', 'color', 'b');
+plot([0, t_f], s_actual(4) * ones(1, 2), 'DisplayName', 'actual mass 2', 'color', 'r');
+plot(t, s_hat(:,1), 'DisplayName', 'mass 1 est.', 'color', 'c');
+plot(t, s_hat(:,4), 'DisplayName', 'mass 2 est.', 'color', 'magenta');
 
 title('Mass est vs. time');
 xlabel('Time(s)');
@@ -78,10 +78,10 @@ ylim([min(link1_m, link2_m) - 10, max(link1_m, link2_m) + 10]);
 
 % Plot of COM x pos estimates
 figure; hold on
-plot([0, t_f], s_actual(2) * ones(1, 2), 'DisplayName', 'actual COM x 1');
-plot([0, t_f], s_actual(5) * ones(1, 2), 'DisplayName', 'actual COM x 2');
-plot(t, s_hat(:,2), 'DisplayName', 'COM x 1 est.');
-plot(t, s_hat(:,5), 'DisplayName', 'COM x 2 est.');
+plot([0, t_f], s_actual(2) * ones(1, 2), 'DisplayName', 'actual COM x 1', 'color', 'b');
+plot([0, t_f], s_actual(5) * ones(1, 2), 'DisplayName', 'actual COM x 2', 'color', 'r');
+plot(t, s_hat(:,2), 'DisplayName', 'COM x 1 est.', 'color', 'c');
+plot(t, s_hat(:,5), 'DisplayName', 'COM x 2 est.', 'color', 'magenta');
 
 title('COM x est vs. time');
 xlabel('Time(s)');
@@ -90,10 +90,10 @@ ylim([min(link1_COM_x, link2_COM_x) - 3, max(link1_COM_x, link2_COM_x) + 3]);
 
 % Plot of moment of inertia estimates
 figure; hold on
-plot([0, t_f], s_actual(3) * ones(1, 2), 'DisplayName', 'actual mass 1');
-plot([0, t_f], s_actual(6) * ones(1, 2), 'DisplayName', 'actual mass 2');
-plot(t, s_hat(:,3), 'DisplayName', 'mass 1 est.');
-plot(t, s_hat(:,6), 'DisplayName', 'mass 2 est.');
+plot([0, t_f], s_actual(3) * ones(1, 2), 'DisplayName', 'actual mass 1', 'color', 'b');
+plot([0, t_f], s_actual(6) * ones(1, 2), 'DisplayName', 'actual mass 2', 'color', 'r');
+plot(t, s_hat(:,3), 'DisplayName', 'mass 1 est.', 'color', 'c');
+plot(t, s_hat(:,6), 'DisplayName', 'mass 2 est.', 'color', 'magenta');
 
 title('Moment of inertia est vs. time');
 xlabel('Time(s)');
