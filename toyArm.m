@@ -1,9 +1,5 @@
-function s_hat = toyArm()
-    dt = 0.01;
-    t_f = 1;
-    NUM_ITER = t_f / dt + 1;
-    n = 6; % dimension of s
-    m = 2; % dimension of z    
+function s_hat = toyArm(z, measurement_sigma)
+    global dt t_f NUM_ITER n m;    
     
     % dynamic parameters
     link1_m = 3.7;
@@ -13,13 +9,21 @@ function s_hat = toyArm()
     link2_COM_x = -1.1;
     link2_inertia_about_z = link2_m * link2_COM_x^2;
     % initial guesses
+    % TODO trivial case
+    ig_link1_m = link1_m;
+    ig_link1_COM_x = link1_COM_x;
+    ig_link1_inertia_about_z = link1_inertia_about_z;
+    ig_link2_m = link2_m;
+    ig_link2_COM_x = link2_COM_x;
+    ig_link2_inertia_about_z = link2_inertia_about_z;
+    
     % TODO This fucks things up
-    ig_link1_m = 3;
-    ig_link1_COM_x = -0.3;
-    ig_link1_inertia_about_z = ig_link1_m * ig_link1_COM_x^2;
-    ig_link2_m = 8.7;
-    ig_link2_COM_x = -0.7;
-    ig_link2_inertia_about_z = ig_link2_m * ig_link2_COM_x^2;
+%     ig_link1_m = 3;
+%     ig_link1_COM_x = -0.3;
+%     ig_link1_inertia_about_z = ig_link1_m * ig_link1_COM_x^2;
+%     ig_link2_m = 8.7;
+%     ig_link2_COM_x = -0.7;
+%     ig_link2_inertia_about_z = ig_link2_m * ig_link2_COM_x^2;
 
     s_actual = [link1_m, link1_COM_x, link1_inertia_about_z, ...
                 link2_m, link2_COM_x, link2_inertia_about_z];
@@ -31,9 +35,6 @@ function s_hat = toyArm()
 
     %% Simulation related stuff
     torque = repmat( sin(linspace(0, 2*pi, NUM_ITER))', 1, m );
-    % generate measurements
-    measurement_sigma = 0.1;
-    z = torque + normrnd(0, measurement_sigma, NUM_ITER, m);
 
     % initial state
     q = zeros(NUM_ITER, m);
@@ -58,7 +59,7 @@ function s_hat = toyArm()
     % each state is assumed to be independent of each other, so Q is diagonal.
     % similar for R.
     % TODO tune these to see what happens. Create a function around these
-    Q = diag(repmat(1.5, n, 1)); % keeping these constant for now
+    Q = diag(repmat(0.1, n, 1)); % keeping these constant for now
     R = diag(repmat(measurement_sigma^2, m, 1));
 
     %% Estimation!
@@ -88,11 +89,6 @@ function s_hat = toyArm()
         P_minus(:,:,k) = A*P(:,:,k-1)*A' + W*Q*W';
 
         % measurement update
-        % TODO testing
-%         pminus = P_minus(:,:,k)
-%         kmat = K(:,:,k)
-%         hhh = H_k'
-        
 %         K(:,:,k) = P_minus(:,:,k) * (H_k'\( H_k*P_minus(:,:,k)*H_k' + V*R*V' ));
         K(:,:,k) = P_minus(:,:,k) * H_k' * inv(H_k*P_minus(:,:,k)*H_k' + V*R*V');
         z_tilde_k = inverseDynamics(buildPlaneMan(s_hat_minus(k,:)), q(k,:), qd(k,:), qdd(k,:));
