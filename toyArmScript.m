@@ -48,6 +48,11 @@ z = torque + normrnd(0, measurement_sigma, NUM_ITER, m);
 
 %% TODO testing
 % robot.plot(q);
+% calculated_torque = zeros(NUM_ITER, m);
+% for k = 1:NUM_ITER
+%     calculated_torque(k,:) = inverseDynamics(robot, q(k,:), qd(k,:), qdd(k,:));
+% end
+% calculated_torque
 
 %% estimate parameters
 % Q anneals to zero (approaches zero) through exponential decay
@@ -67,8 +72,10 @@ s_hat = estimateParams(z, assumed_measurement_sigma, Q, q, qd, qdd, s_hat_1);
 %% Plot results!
 hold on
 % Plot of torque measurements
-plot(t, torque(:,1), 'DisplayName', 'actual torque 1');
-plot(t, torque(:,2), 'DisplayName', 'actual torque 2');
+plot(t, torque(:,1), 'DisplayName', 'actual torque 1', 'color', 'b');
+plot(t, torque(:,2), 'DisplayName', 'actual torque 2', 'color', 'r');
+% plot(t, calculated_torque(:,1), 'DisplayName', 'calc torque 1', 'color', 'c');
+% plot(t, calculated_torque(:,2), 'DisplayName', 'calc torque 2', 'color', 'magenta');
 scatter(t, z(:,1), 'X', 'DisplayName', 'noisy torque 1 meas');
 scatter(t, z(:,2), 'O', 'DisplayName', 'noisy torque 2 meas');
 

@@ -30,7 +30,7 @@ function s_hat = estimateParams(z, assumed_measurement_sigma, Q, q, qd, qdd, s_h
     for k = 2:NUM_ITER
         % time update
         s_hat_minus(k, :) = s_hat(k-1, :); % dynamic parameters are not expected to change
-        P_minus(:,:,k) = A*P(:,:,k-1)*A' + W*Q(:,:,k)*W';
+        P_minus(:,:,k) = A*P(:,:,k-1)*A' + W*Q(:,:,k-1)*W';
 
         % calculate non-constant Jacobian matrices numerically
         H_k = computeH(s_hat_minus(k, :), q(k,:), qd(k,:), qdd(k,:));
