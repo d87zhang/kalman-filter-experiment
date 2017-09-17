@@ -39,7 +39,7 @@ function s_hat = estimateParams(z, assumed_measurement_sigma, Q, q, qd, qdd, s_h
 %         K(:,:,k) = P_minus(:,:,k) * (H_k'\( H_k*P_minus(:,:,k)*H_k' + V*R*V' ));
         K(:,:,k) = P_minus(:,:,k) * H_k' * inv(H_k*P_minus(:,:,k)*H_k' + V*R*V');
         z_tilde_k = inverseDynamics(buildPlaneMan(s_hat_minus(k,:)), q(k,:), qd(k,:), qdd(k,:));
-        s_hat(k,:) = s_hat_minus(k) + K(:,:,k) * (z(k,:)' - z_tilde_k);
+        s_hat(k,:) = s_hat_minus(k,:) + ( K(:,:,k) * (z(k,:)' - z_tilde_k) )'; % TODO look here!
         P(:,:,k) = (eye(n) - K(:,:,k) * H_k) * P_minus(:,:,k);
         
 %         disp(strcat('done iteration ', num2str(k)));
