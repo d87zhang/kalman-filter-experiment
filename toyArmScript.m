@@ -7,7 +7,7 @@ t = linspace(0, t_f, NUM_ITER);
 n = 6; % dimension of s
 m = 2; % dimension of z
     
-measurement_sigma = 2;
+measurement_sigma = 8;
 assumed_measurement_sigma = measurement_sigma;
 
 %% build robo
@@ -59,7 +59,7 @@ z = torque + normrnd(0, measurement_sigma, NUM_ITER, m);
 decay_half_life = tf/6;
 alpha = -log(2) / decay_half_life;
 decay_factors = exp(alpha * t);
-% Q = repmat(0.005 * diag(s_hat_1), 1, 1, NUM_ITER);
+% Q = repmat(0.1 * diag(s_hat_1), 1, 1, NUM_ITER);
 Q = repmat(0.1 * eye(n), 1, 1, NUM_ITER);
 % TODO testing
 % Q(:,:,1)
