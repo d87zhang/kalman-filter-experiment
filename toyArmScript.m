@@ -3,10 +3,11 @@ global dt t_f NUM_ITER n m;
 dt = 0.01;
 t_f = 1;
 NUM_ITER = t_f / dt + 1;
+t = linspace(0, t_f, NUM_ITER);
 n = 6; % dimension of s
 m = 2; % dimension of z
     
-measurement_sigma = 10;
+measurement_sigma = 2;
 assumed_measurement_sigma = measurement_sigma;
 
 %% build robo
@@ -49,12 +50,23 @@ z = torque + normrnd(0, measurement_sigma, NUM_ITER, m);
 % robot.plot(q);
 
 %% estimate parameters
-s_hat = estimateParams(z, assumed_measurement_sigma, q, qd, qdd, s_hat_1);
+% Q anneals to zero (approaches zero) through exponential decay
+decay_half_life = tf/6;
+alpha = -log(2) / decay_half_life;
+decay_factors = exp(alpha * t);
+% Q = repmat(0.005 * diag(s_hat_1), 1, 1, NUM_ITER);
+Q = repmat(0.1 * eye(n), 1, 1, NUM_ITER);
+% TODO testing
+% Q(:,:,1)
+for k = 1:NUM_ITER
+    Q(:,:,k) = decay_factors(k) * Q(:,:,k);
+end
+
+s_hat = estimateParams(z, assumed_measurement_sigma, Q, q, qd, qdd, s_hat_1);
        
 %% Plot results!
 hold on
 % Plot of torque measurements
-t = linspace(0, t_f, NUM_ITER);
 plot(t, torque(:,1), 'DisplayName', 'actual torque 1');
 plot(t, torque(:,2), 'DisplayName', 'actual torque 2');
 scatter(t, z(:,1), 'X', 'DisplayName', 'noisy torque 1 meas');

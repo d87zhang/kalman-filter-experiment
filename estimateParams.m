@@ -1,4 +1,4 @@
-function s_hat = estimateParams(z, assumed_measurement_sigma, q, qd, qdd, s_hat_1)
+function s_hat = estimateParams(z, assumed_measurement_sigma, Q, q, qd, qdd, s_hat_1)
     global dt t_f NUM_ITER n m;
 
     %% specifications
@@ -8,7 +8,6 @@ function s_hat = estimateParams(z, assumed_measurement_sigma, q, qd, qdd, s_hat_
     % each state is assumed to be independent of each other, so Q is diagonal.
     % similar for R.
     % TODO tune these to see what happens. Create a function around these
-    Q = diag(repmat(0.1, n, 1)); % keeping these constant for now
     R = diag(repmat(assumed_measurement_sigma^2, m, 1));
 
     %% Estimation!
@@ -23,7 +22,7 @@ function s_hat = estimateParams(z, assumed_measurement_sigma, q, qd, qdd, s_hat_
     P(:, :, 1) = eye(n, n);
     
     % small difference in states used for numerical differentiation wrt s
-    ds = 0.005 * ones(n, 1);
+    ds = 0.01 * ones(n, 1);
     % calculate Jacobian matrices that stay constant...
     A = eye(n);
     W = eye(n);
@@ -31,7 +30,7 @@ function s_hat = estimateParams(z, assumed_measurement_sigma, q, qd, qdd, s_hat_
     for k = 2:NUM_ITER
         % time update
         s_hat_minus(k, :) = s_hat(k-1, :); % dynamic parameters are not expected to change
-        P_minus(:,:,k) = A*P(:,:,k-1)*A' + W*Q*W';
+        P_minus(:,:,k) = A*P(:,:,k-1)*A' + W*Q(:,:,k)*W';
 
         % calculate non-constant Jacobian matrices numerically
         H_k = computeH(s_hat_minus(k, :), q(k,:), qd(k,:), qdd(k,:));
@@ -43,7 +42,7 @@ function s_hat = estimateParams(z, assumed_measurement_sigma, q, qd, qdd, s_hat_
         s_hat(k,:) = s_hat_minus(k) + K(:,:,k) * (z(k,:)' - z_tilde_k);
         P(:,:,k) = (eye(n) - K(:,:,k) * H_k) * P_minus(:,:,k);
         
-        disp(strcat('done iteration ', num2str(k)));
+%         disp(strcat('done iteration ', num2str(k)));
     end
     
     
@@ -62,6 +61,10 @@ function s_hat = estimateParams(z, assumed_measurement_sigma, q, qd, qdd, s_hat_
             deviantTorque = inverseDynamics(deviantRobo, q_now, qd_now, qdd_now);
             H(:, s_idx) = (deviantTorque - baseTorque)./ds(s_idx);
         end
+        
+        % TODO Testing
+%         qdd_now
+        H
     end
     
 end % function toyArm
