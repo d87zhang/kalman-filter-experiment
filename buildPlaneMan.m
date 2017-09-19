@@ -1,6 +1,7 @@
-function robot = buildPlaneMan(s)
+function robot = buildPlaneMan(s, link1_COM_x, link2_COM_x)
     %% Returns a SerialLink robot built with the parameters from the given
     % state vector s
+    
     L1 = 1;
     L2 = 1.5;
 
@@ -18,15 +19,15 @@ function robot = buildPlaneMan(s)
     % Tc  dynamic: link Coulomb friction
     % G   actuator: gear ratio
     % Jm  actuator: motor inertia (motor referred)
-
+    
     % dynamic parameters
     link1_m = s(1);
-    link1_COM_x = s(2);
-    link1_inertia_about_z = s(3);
+%     link1_COM_x = s(2);
+    link1_inertia_about_z = s(2);
 
-    link2_m = s(4);
-    link2_COM_x = s(5);
-    link2_inertia_about_z = s(6);
+    link2_m = s(3);
+%     link2_COM_x = s(5);
+    link2_inertia_about_z = s(4);
 
     links(1).m = link1_m;
     links(1).r = [link1_COM_x 0 0]; % Must be a vector of 3 elements
