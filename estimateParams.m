@@ -1,4 +1,4 @@
-function s_hat = estimateParams(z, assumed_measurement_sigma, Q, q, qd, qdd, s_hat_1)
+function [s_hat, H] = estimateParams(z, assumed_measurement_sigma, Q, q, qd, qdd, s_hat_1)
     global dt t_f NUM_ITER n m;
 
     %% specifications
@@ -27,20 +27,22 @@ function s_hat = estimateParams(z, assumed_measurement_sigma, Q, q, qd, qdd, s_h
     A = eye(n);
     W = eye(n);
     V = eye(m);
+    H = zeros(m, n, NUM_ITER);
     for k = 2:NUM_ITER
         % time update
         s_hat_minus(k, :) = s_hat(k-1, :); % dynamic parameters are not expected to change
         P_minus(:,:,k) = A*P(:,:,k-1)*A' + W*Q(:,:,k-1)*W';
 
         % calculate non-constant Jacobian matrices numerically
-        H_k = computeH(s_hat_minus(k, :), q(k,:), qd(k,:), qdd(k,:));
+        H(:,:,k) = computeH(s_hat_minus(k, :), q(k,:), qd(k,:), qdd(k,:));
         
         % measurement update
-%         K(:,:,k) = P_minus(:,:,k) * (H_k'\( H_k*P_minus(:,:,k)*H_k' + V*R*V' ));
-        K(:,:,k) = P_minus(:,:,k) * H_k' * inv(H_k*P_minus(:,:,k)*H_k' + V*R*V');
+%         K(:,:,k) = P_minus(:,:,k) * (H(:,:,k)'\( H(:,:,k)*P_minus(:,:,k)*H(:,:,k)' + V*R*V' ));
+        K(:,:,k) = P_minus(:,:,k) * H(:,:,k)' ...
+                   * inv(H(:,:,k)*P_minus(:,:,k)*H(:,:,k)' + V*R*V');
         z_tilde_k = inverseDynamics(buildPlaneMan(s_hat_minus(k,:)), q(k,:), qd(k,:), qdd(k,:));
         s_hat(k,:) = s_hat_minus(k,:) + ( K(:,:,k) * (z(k,:)' - z_tilde_k) )'; % TODO look here!
-        P(:,:,k) = (eye(n) - K(:,:,k) * H_k) * P_minus(:,:,k);
+        P(:,:,k) = (eye(n) - K(:,:,k) * H(:,:,k)) * P_minus(:,:,k);
         
 %         disp(strcat('done iteration ', num2str(k)));
     end

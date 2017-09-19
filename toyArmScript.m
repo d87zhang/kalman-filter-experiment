@@ -72,7 +72,7 @@ for k = 1:NUM_ITER
     Q(:,:,k) = decay_factors(k) * Q(:,:,k);
 end
 
-s_hat = estimateParams(z, assumed_measurement_sigma, Q, q, qd, qdd, s_hat_1);
+[s_hat, H] = estimateParams(z, assumed_measurement_sigma, Q, q, qd, qdd, s_hat_1);
 disp('Done estimating');
 
 %% Plot results!
@@ -138,4 +138,22 @@ max_abs = max(abs([link1_inertia_about_z, link2_inertia_about_z]));
 ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
 
 saveas(gcf, strcat(folderName, '4-moment of inertia.jpg'));
-  
+
+% Plot of "magnitude" measures of H
+figure; hold on
+H_l1_norm = zeros(NUM_ITER, 1);
+for k = 1:NUM_ITER
+    H_l1_norm(k) = norm(H(:,:,k), 1);
+end
+H_max = zeros(NUM_ITER, 1);
+for k = 1:NUM_ITER
+    H_max(k) = max(max(H(:,:,k)));
+end
+plot(t, H_l1_norm / 9, 'DisplayName', 'H average magnitude', 'color', 'b');
+plot(t, H_max, 'DisplayName', 'H max magnitude', 'color', 'r');
+
+title('H magnitude measures vs. time');
+xlabel('Time(s)');
+ylabel('unit for an element in H');
+
+saveas(gcf, strcat(folderName, '5-avg magnitude of H.jpg'));

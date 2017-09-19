@@ -13,8 +13,13 @@ function [q, qd, qdd] = simulateRobo(robot, torque)
         q(iter, :) = q_end;
         qd(iter, :) = qd_end;
         
-        qdd(iter, :) = robot.accel(q_now, qd_now, torque(iter, :))';
-%         new_qdd_est = qdd(iter, :)
+%         qdd(iter, :) = robot.accel(q_now, qd_now, torque(iter, :))';
+
 %         qdd(iter, :) = (qd_end - qd_now)/dt;
     end
+    
+    for k = 2:NUM_ITER-1
+        qdd(k,:) = (qd(k+1,:) - qd(k-1,:)) / (2*dt);
+    end
+    qdd(end,:) = (qd(end,:) - qd(end-1,:)) / dt;
 end
