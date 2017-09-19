@@ -64,7 +64,7 @@ function s_hat = estimateParams(z, assumed_measurement_sigma, Q, q, qd, qdd, s_h
         
         % TODO Testing
 %         qdd_now
-        H
+        % H
     end
     
 end % function toyArm
