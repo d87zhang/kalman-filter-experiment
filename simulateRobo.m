@@ -12,7 +12,9 @@ function [q, qd, qdd] = simulateRobo(robot, torque)
         [q_end, qd_end] = forwardDynamics(robot, t_now, q_now, qd_now, torque(iter-1, :), dt);
         q(iter, :) = q_end;
         qd(iter, :) = qd_end;
-        % calculate qdd myself..
-        qdd(iter, :) = (qd_end - qd_now)/dt;
+        
+        qdd(iter, :) = robot.accel(q_now, qd_now, torque(iter, :))';
+%         new_qdd_est = qdd(iter, :)
+%         qdd(iter, :) = (qd_end - qd_now)/dt;
     end
 end

@@ -41,11 +41,13 @@ s_hat_1 = [ig_link1_m, ig_link1_COM_x, ig_link1_inertia_about_z, ...
            ig_link2_m, ig_link2_COM_x, ig_link2_inertia_about_z];
 robot = buildPlaneMan(s_actual);
 
-%% simulate everything
+%% generate torques and measurements
 torque = zeros(NUM_ITER, m);
 torque(:,1) = 100 * sin(2*pi/2.8 * t) + 10 * sin(2*pi/0.4 * t + pi);
 torque(:,2) = 40 * sin(2*pi/1.7 * t + pi/2) + 7 * sin(2*pi/0.7 * t);
 z = torque + normrnd(0, measurement_sigma, NUM_ITER, m);
+
+%% simulate robot
 [q, qd, qdd] = simulateRobo(robot, torque);
 disp('Done simulating');
 
