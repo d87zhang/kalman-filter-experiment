@@ -7,8 +7,8 @@ t = linspace(0, t_f, NUM_ITER);
 n = 6; % dimension of s
 m = 2; % dimension of z
     
-measurement_sigma = 4 * 1;
-% measurement_sigma = 0;
+% measurement_sigma = 4 * 1;
+measurement_sigma = 0;
 assumed_measurement_sigma = measurement_sigma;
 
 %% build robo
@@ -45,9 +45,17 @@ torque(:,2) = 40 * sin(2*pi/1.7 * t + pi/2) + 7 * sin(2*pi/0.7 * t);
 z = torque + normrnd(0, measurement_sigma, NUM_ITER, m);
 
 %% simulate robot
-tic
-[q, qd, qdd] = simulateRobo(robot, torque);
-toc
+% % tic
+% % [q, qd, qdd] = simulateRobo(robot, torque);
+% % toc
+
+% simulate changing robot
+% s = repmat(s_actual, NUM_ITER, 1);
+% s(:,4) = linspace(s_actual(4), s_actual(4) + 3, NUM_ITER);
+% tic
+% [q, qd, qdd] = simulateChangingRobo(s, torque);
+% toc
+
 disp('Done simulating');
 
 %% TODO testing
@@ -97,9 +105,10 @@ saveas(gcf, strcat(folderName, '1-torque.jpg'));
 % Plot of mass estimates
 figure; hold on
 plot([0, t_f], s_actual(1) * ones(1, 2), 'DisplayName', 'actual mass 1', 'color', 'b');
-plot([0, t_f], s_actual(3) * ones(1, 2), 'DisplayName', 'actual mass 2', 'color', 'r');
+plot([0, t_f], s_actual(4) * ones(1, 2), 'DisplayName', 'actual mass 2', 'color', 'r');
+% plot(t, s(:,4), 'DisplayName', 'actual mass 2', 'color', 'r');
 plot(t, s_hat(:,1), 'DisplayName', 'mass 1 est.', 'color', 'c');
-plot(t, s_hat(:,3), 'DisplayName', 'mass 2 est.', 'color', 'magenta');
+plot(t, s_hat(:,4), 'DisplayName', 'mass 2 est.', 'color', 'magenta');
 
 title('Mass est vs. time');
 xlabel('Time(s)');
