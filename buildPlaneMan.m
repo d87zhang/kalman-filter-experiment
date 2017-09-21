@@ -1,9 +1,9 @@
-function robot = buildPlaneMan(s, link1_COM_x, link2_COM_x)
-    %% Returns a SerialLink robot built with the parameters from the given
+function robot = buildPlaneMan(s)
+    % Returns a SerialLink robot built with the parameters from the given
     % state vector s
     
-    L1 = 1;
-    L2 = 1.5;
+    L1 = 2;
+    L2 = 3.5;
 
     links(1) = Link('d', 0, 'a', L1, 'alpha', pi);
     links(2) = Link('d', 0, 'a', L2, 'alpha', 0);
@@ -22,12 +22,12 @@ function robot = buildPlaneMan(s, link1_COM_x, link2_COM_x)
     
     % dynamic parameters
     link1_m = s(1);
-%     link1_COM_x = s(2);
-    link1_inertia_about_z = s(2);
+    link1_COM_x = s(2) / link1_m;
+    link1_inertia_about_z = s(3);
 
-    link2_m = s(3);
-%     link2_COM_x = s(5);
-    link2_inertia_about_z = s(4);
+    link2_m = s(4);
+    link2_COM_x = s(5) / link2_m;
+    link2_inertia_about_z = s(6);
 
     links(1).m = link1_m;
     links(1).r = [link1_COM_x 0 0]; % Must be a vector of 3 elements
@@ -48,5 +48,6 @@ function robot = buildPlaneMan(s, link1_COM_x, link2_COM_x)
     robot.gravity = [0 9.81 0]; % gravity goes in the -y direction
 %     robot.gravity = [0 0 0]; % TODO test without gravity..
     robot.qlim = [0 pi; 0 3/4*pi];
-    robot.plotopt = {'workspace' [-0.5,3, -3,3, -0.5,0.5]};
+    robot.plotopt = {'workspace' [-(L1 + L2 + 0.5),(L1 + L2 + 0.5), ...
+                                  -(L1 + L2 + 0.5),(L1 + L2 + 0.5), -0.5,0.5]};
 end

@@ -1,4 +1,5 @@
 function [q, qd, qdd] = simulateRobo(robot, torque)
+    % Simulate a constant robot
     global dt t_f NUM_ITER n m;
 
     q = zeros(NUM_ITER, m);

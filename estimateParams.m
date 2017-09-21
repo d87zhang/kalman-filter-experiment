@@ -1,4 +1,4 @@
-function [s_hat, H] = estimateParams(z, assumed_measurement_sigma, Q, ...
+function [s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, ...
                                      q, qd, qdd, s_hat_1, link1_COM_x, link2_COM_x)
     global dt t_f NUM_ITER n m;
 
@@ -29,6 +29,9 @@ function [s_hat, H] = estimateParams(z, assumed_measurement_sigma, Q, ...
     W = eye(n);
     V = eye(m);
     H = zeros(m, n, NUM_ITER);
+    
+    % for plotting purposes
+    residual = zeros(NUM_ITER, m);
     for k = 2:NUM_ITER
         % time update
         s_hat_minus(k, :) = s_hat(k-1, :); % dynamic parameters are not expected to change
@@ -41,8 +44,9 @@ function [s_hat, H] = estimateParams(z, assumed_measurement_sigma, Q, ...
 %         K(:,:,k) = P_minus(:,:,k) * (H(:,:,k)'\( H(:,:,k)*P_minus(:,:,k)*H(:,:,k)' + V*R*V' ));
         K(:,:,k) = P_minus(:,:,k) * H(:,:,k)' ...
                    * inv(H(:,:,k)*P_minus(:,:,k)*H(:,:,k)' + V*R*V');
-        z_tilde_k = inverseDynamics(buildPlaneMan(s_hat_minus(k,:), link1_COM_x, link2_COM_x), q(k,:), qd(k,:), qdd(k,:));
-        s_hat(k,:) = s_hat_minus(k,:) + ( K(:,:,k) * (z(k,:)' - z_tilde_k) )'; % TODO look here!
+        z_tilde_k = inverseDynamics(buildPlaneMan(s_hat_minus(k,:)), q(k,:), qd(k,:), qdd(k,:));
+        residual(k,:) = z(k,:) - z_tilde_k';
+        s_hat(k,:) = s_hat_minus(k,:) + ( K(:,:,k) * residual(k,:)' )'; % TODO look here!
         P(:,:,k) = (eye(n) - K(:,:,k) * H(:,:,k)) * P_minus(:,:,k);
         
 %         disp(strcat('done iteration ', num2str(k)));
@@ -52,7 +56,7 @@ function [s_hat, H] = estimateParams(z, assumed_measurement_sigma, Q, ...
     %% helper functions
     function H = computeH(s_hat_minus_k, q_now, qd_now, qdd_now)
         % Computes the Jacobian matrix H numerically
-        baseRobo = buildPlaneMan(s_hat_minus_k, link1_COM_x, link2_COM_x);
+        baseRobo = buildPlaneMan(s_hat_minus_k);
         baseTorque = inverseDynamics(baseRobo, q_now, qd_now, qdd_now);
         
         H = zeros(m, n);
@@ -60,14 +64,14 @@ function [s_hat, H] = estimateParams(z, assumed_measurement_sigma, Q, ...
         for s_idx = 1:n
             s_deviant = s_hat_minus_k;
             s_deviant(s_idx) = s_deviant(s_idx) + ds(s_idx);
-            deviantRobo = buildPlaneMan(s_deviant, link1_COM_x, link2_COM_x);
+            deviantRobo = buildPlaneMan(s_deviant);
             deviantTorque = inverseDynamics(deviantRobo, q_now, qd_now, qdd_now);
             H(:, s_idx) = (deviantTorque - baseTorque)./ds(s_idx);
         end
         
         % TODO Testing
 %         qdd_now
-        % H
+%         H
     end
     
 end % function toyArm
