@@ -45,12 +45,12 @@ toc
 disp('Done simulating');
 
 %% TODO testing
-robot.plot(q);
-% calculated_torque = zeros(NUM_ITER, m);
-% for k = 1:NUM_ITER
-%     calculated_torque(k,:) = inverseDynamics(robot, q(k,:), qd(k,:), qdd(k,:));
-% end
-% norm(calculated_torque - torque, 1)/numel(torque)
+% robot.plot(q);
+calculated_torque = zeros(NUM_ITER, m);
+for k = 1:NUM_ITER
+    calculated_torque(k,:) = inverseDynamics(robot, q(k,:), qd(k,:), qdd(k,:));
+end
+norm(calculated_torque - torque, 1)/numel(torque)
 
 %% estimate parameters
 % Q anneals to zero (approaches zero) through exponential decay
@@ -64,7 +64,7 @@ for k = 1:NUM_ITER
 end
 
 tic
-[s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, q, qd, qdd, s_hat_1, link1_COM_x, link2_COM_x);
+[s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, q, qd, qdd, s_hat_1, @buildPuma);
 toc
 disp('Done estimating');
 
@@ -72,79 +72,78 @@ disp('Done estimating');
 folderName = 'C:\Users\Difei\Desktop\toyArm pics\currPlots\';
 YLIM_FACTOR = 3;
 
-hold on
-% Plot of torque measurements
-plot([0, t_f], zeros(1, 2), 'DisplayName', 'zero line', 'color', 'black');
-plot(t, torque(:,1), 'DisplayName', 'actual torque 1', 'color', 'b');
-plot(t, torque(:,2), 'DisplayName', 'actual torque 2', 'color', 'r');
-% plot(t, calculated_torque(:,1), 'DisplayName', 'calc torque 1', 'color', 'c');
-% plot(t, calculated_torque(:,2), 'DisplayName', 'calc torque 2', 'color', 'magenta');
-scatter(t, z(:,1), 'X', 'DisplayName', 'noisy torque 1 meas');
-scatter(t, z(:,2), 'O', 'DisplayName', 'noisy torque 2 meas');
+% figure; hold on
+% % Plot of torque measurements
+% plot([0, t_f], zeros(1, 2), 'DisplayName', 'zero line', 'color', 'black');
+% plot(t, torque(:,1), 'DisplayName', 'actual torque 1', 'color', 'b');
+% plot(t, torque(:,2), 'DisplayName', 'actual torque 2', 'color', 'r');
+% % plot(t, calculated_torque(:,1), 'DisplayName', 'calc torque 1', 'color', 'c');
+% % plot(t, calculated_torque(:,2), 'DisplayName', 'calc torque 2', 'color', 'magenta');
+% scatter(t, z(:,1), 'DisplayName', 'noisy torque 1 meas');
+% scatter(t, z(:,2), 'DisplayName', 'noisy torque 2 meas');
+% 
+% title('Torque vs. time');
+% xlabel('Time(s)');
+% ylabel('Torque(whatever torque is usually in)');
+% 
+% saveas(gcf, strcat(folderName, '1-torque.jpg'));
 
-title('Torque vs. time');
-xlabel('Time(s)');
-ylabel('Torque(whatever torque is usually in)');
 
-saveas(gcf, strcat(folderName, '1-torque.jpg'));
+for idx = 1:(n/10)
+    base_idx = 10 * (idx-1);
+    figure; hold on
+    % plot of mass estimates
+    subplot(3, 1, 1);
+    plot([0, t_f], s_actual(base_idx + 1) * ones(1, 2), 'color', 'b');
+    plot(t, s_hat(:,base_idx + 1), 'color', 'm');
+    
+    title(sprintf('link %d - mass est vs. time', idx));
+    xlabel('Time(s)');
+    ylabel('mass(kg)');
+    max_abs = max([abs(s_actual(base_idx + 1)); 0.1]);
+    ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+    
+    % plot of first moment estimates
+    subplot(3, 1, 2);
+    for offset_idx = 2:4
+        plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2));
+        plot(t, s_hat(:,base_idx + offset_idx));
+    end
+    
+    title(sprintf('link %d - first moment of mass est vs. time', idx));
+    xlabel('Time(s)');
+    ylabel('first moment(kg*m)');
+    max_abs = max([abs(s_actual(base_idx+2:base_idx+4)); 0.1]);
+    ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+    
+    % plot of moment of inertia estimates
+    subplot(3, 1, 3);
+    for offset_idx = 5:10
+        plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2));
+        plot(t, s_hat(:,base_idx + offset_idx));
+    end
+    
+    title(sprintf('link %d - moment of inertia est vs. time', idx));
+    xlabel('Time(s)');
+    ylabel('Moment of inertia(kg*m^2)');
+    max_abs = max([abs(s_actual(base_idx+5:base_idx+10)); 0.1]);
+    ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+    
+%     saveas(gcf, strcat(folderName, '2-mass.jpg'));
+end
 
-% Plot of mass estimates
-figure; hold on
-plot([0, t_f], s_actual(1) * ones(1, 2), 'DisplayName', 'actual mass 1', 'color', 'b');
-plot([0, t_f], s_actual(4) * ones(1, 2), 'DisplayName', 'actual mass 2', 'color', 'r');
-% plot(t, s(:,4), 'DisplayName', 'actual mass 2', 'color', 'r');
-plot(t, s_hat(:,1), 'DisplayName', 'mass 1 est.', 'color', 'c');
-plot(t, s_hat(:,4), 'DisplayName', 'mass 2 est.', 'color', 'magenta');
-
-title('Mass est vs. time');
-xlabel('Time(s)');
-ylabel('mass(kg)');
-max_abs = max(abs([link1_m, link2_m]));
-ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-
-saveas(gcf, strcat(folderName, '2-mass.jpg'));
-
-% Plot of first moment of mass estimates
-figure; hold on
-plot([0, t_f], s_actual(2) * ones(1, 2), 'DisplayName', 'actual first moment 1', 'color', 'b');
-plot([0, t_f], s_actual(5) * ones(1, 2), 'DisplayName', 'actual first moment 2', 'color', 'r');
-plot(t, s_hat(:,2), 'DisplayName', 'first moment 1 est.', 'color', 'c');
-plot(t, s_hat(:,5), 'DisplayName', 'first moment 2 est.', 'color', 'magenta');
-
-title('first moment of mass est vs. time');
-xlabel('Time(s)');
-ylabel('first moment(kg*m)');
-max_abs = max(abs([link1_m * link1_COM_x, link2_m * link2_COM_x]));
-ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-
-saveas(gcf, strcat(folderName, '3-first moment.jpg'));
-
-% Plot of moment of inertia estimates
-figure; hold on
-plot([0, t_f], s_actual(3) * ones(1, 2), 'DisplayName', 'actual mass 1', 'color', 'b');
-plot([0, t_f], s_actual(6) * ones(1, 2), 'DisplayName', 'actual mass 2', 'color', 'r');
-plot(t, s_hat(:,3), 'DisplayName', 'mass 1 est.', 'color', 'c');
-plot(t, s_hat(:,6), 'DisplayName', 'mass 2 est.', 'color', 'magenta');
-
-title('Moment of inertia est vs. time');
-xlabel('Time(s)');
-ylabel('Moment of inertia(whatever torque is usually in)');
-max_abs = max(abs([link1_inertia_about_z, link2_inertia_about_z]));
-ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-
-saveas(gcf, strcat(folderName, '4-moment of inertia.jpg'));
 
 % Plot of residual
-figure; hold on
-plot(t, residual(:,1), 'DisplayName', 'residual for torque 1', 'color', 'b');
-plot(t, residual(:,2), 'DisplayName', 'residual for torque 2', 'color', 'r');
-
-
-title('Residual vs. time');
-xlabel('Time(s)');
-ylabel('Residual torque(whatever torque is usually in)');
-
-saveas(gcf, strcat(folderName, '5-residual.jpg'));
+% figure; hold on
+% plot(t, residual(:,1), 'DisplayName', 'residual for torque 1', 'color', 'b');
+% plot(t, residual(:,2), 'DisplayName', 'residual for torque 2', 'color', 'r');
+% 
+% 
+% title('Residual vs. time');
+% xlabel('Time(s)');
+% ylabel('Residual torque(whatever torque is usually in)');
+% 
+% saveas(gcf, strcat(folderName, '5-residual.jpg'));
 
 % Plot of "magnitude" measures of H % TODO plot a measure of rankedness
 % instead
