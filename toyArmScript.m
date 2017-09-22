@@ -3,9 +3,9 @@ global dt t_f NUM_ITER n m;
 dt = 0.005;
 t_f = 5;
 NUM_ITER = t_f / dt + 1;
-t = linspace(0, t_f, NUM_ITER);
-n = 6; % dimension of s
-m = 2; % dimension of z
+t = linspace(0, t_f, NUM_ITER)';
+n = 3 * 10; % dimension of s
+m = 6; % dimension of z
     
 % measurement_sigma = 4 * 1;
 measurement_sigma = 0;
@@ -13,41 +13,27 @@ assumed_measurement_sigma = measurement_sigma;
 
 %% build robo
 % dynamic parameters
-link1_m = 3.7;
-link1_COM_x = -1.6;
-link1_inertia_about_z = link1_m * link1_COM_x^2;
-link2_m = 8.2;
-link2_COM_x = -1.2;
-link2_inertia_about_z = link2_m * link2_COM_x^2;
-% initial guesses
-ig_link1_m = link1_m * 1.2;
-ig_link1_COM_x = link1_COM_x;
-ig_link1_inertia_about_z = link1_inertia_about_z * 1.2;
-ig_link2_m = link2_m * 1.2;
-ig_link2_COM_x = link2_COM_x;
-ig_link2_inertia_about_z = link2_inertia_about_z * 1.2;
+s_actual = zeros(n, 1);
+s_actual(1:10) = [0, 0, 0, 0, 0   0   0.35    0   0   0];
+s_actual(11:20) = [17.4, 17.4*0.068, 17.4*0.006, 17.4*-0.016, ...
+                  .13   .524    .539    0     0   0];
+s_actual(21:30) = [4.8, 0, 4.8*-0.070, 4.8*0.014, ...
+                  .066    .0125   .066    0   0   0];
 
-% s_actual = [link1_m, link1_COM_x, link1_inertia_about_z, ...
-%             link2_m, link2_COM_x, link2_inertia_about_z];
-% s_hat_1 = [ig_link1_m, ig_link1_COM_x, ig_link1_inertia_about_z, ...
-%            ig_link2_m, ig_link2_COM_x, ig_link2_inertia_about_z];
-s_actual = [link1_m, link1_m * link1_COM_x, link1_inertia_about_z, ...
-            link2_m, link2_m * link2_COM_x, link2_inertia_about_z];
-s_hat_1 = [ig_link1_m, ig_link1_m * ig_link1_COM_x, ig_link1_inertia_about_z, ...
-           ig_link2_m, ig_link2_m * ig_link2_COM_x, ig_link2_inertia_about_z];
+s_hat_1 = 1.2 * s_actual; % TODO try something more fun
        
-robot = buildPlaneMan(s_actual);
+robot = buildPuma(s_actual);
 
 %% generate torques and measurements
-torque = zeros(NUM_ITER, m);
-torque(:,1) = 100 * sin(2*pi/2.8 * t) + 10 * sin(2*pi/0.4 * t + pi);
-torque(:,2) = 40 * sin(2*pi/1.7 * t + pi/2) + 7 * sin(2*pi/0.7 * t);
+coef_file = matfile('coef.mat');
+coef = coef_file.coef;
+torque = genTorques(coef, t);
 z = torque + normrnd(0, measurement_sigma, NUM_ITER, m);
 
 %% simulate robot
-% % tic
-% % [q, qd, qdd] = simulateRobo(robot, torque);
-% % toc
+tic
+[q, qd, qdd] = simulateRobo(robot, torque);
+toc
 
 % simulate changing robot
 % s = repmat(s_actual, NUM_ITER, 1);
@@ -59,12 +45,12 @@ z = torque + normrnd(0, measurement_sigma, NUM_ITER, m);
 disp('Done simulating');
 
 %% TODO testing
-% robot.plot(q);
-calculated_torque = zeros(NUM_ITER, m);
-for k = 1:NUM_ITER
-    calculated_torque(k,:) = inverseDynamics(robot, q(k,:), qd(k,:), qdd(k,:));
-end
-norm(calculated_torque - torque, 1)/numel(torque)
+robot.plot(q);
+% calculated_torque = zeros(NUM_ITER, m);
+% for k = 1:NUM_ITER
+%     calculated_torque(k,:) = inverseDynamics(robot, q(k,:), qd(k,:), qdd(k,:));
+% end
+% norm(calculated_torque - torque, 1)/numel(torque)
 
 %% estimate parameters
 % Q anneals to zero (approaches zero) through exponential decay
