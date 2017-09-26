@@ -9,7 +9,7 @@ function robot = buildPlaneMan(s)
     links(2) = Link('d', 0, 'a', L2, 'alpha', 0);
 
     GEAR_RATIO = 1; % arbitrary..
-    LINK_VFRICTION = 0; % TODO experiment with non-zero values? maybe estimate them as well?
+    LINK_VFRICTION = 0;
     LINK_MOTOR_INERTIA = 0;
 
     % m   dynamic: link mass
@@ -46,7 +46,6 @@ function robot = buildPlaneMan(s)
     robot = SerialLink(links, 'name', 'planeMan');
 
     robot.gravity = [0 9.81 0]; % gravity goes in the -y direction
-%     robot.gravity = [0 0 0]; % TODO test without gravity..
     robot.qlim = [0 pi; 0 3/4*pi];
     robot.plotopt = {'workspace' [-(L1 + L2 + 0.5),(L1 + L2 + 0.5), ...
                                   -(L1 + L2 + 0.5),(L1 + L2 + 0.5), -0.5,0.5]};

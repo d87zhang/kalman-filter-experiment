@@ -6,9 +6,9 @@ NUM_ITER = t_f / dt + 1;
 t = linspace(0, t_f, NUM_ITER)';
 n = 3 * 10; % dimension of s
 m = 6; % dimension of z
-    
-% measurement_sigma = 4 * 1;
-measurement_sigma = 0;
+
+measurement_sigma = 4 * 1e-1;
+% measurement_sigma = 0;
 assumed_measurement_sigma = measurement_sigma;
 
 %% build robo
@@ -44,7 +44,7 @@ toc
 
 disp('Done simulating');
 
-%% TODO testing
+%% testing
 % robot.plot(q);
 calculated_torque = zeros(NUM_ITER, m);
 for k = 1:NUM_ITER
@@ -88,14 +88,27 @@ YLIM_FACTOR = 3;
 % 
 % saveas(gcf, strcat(folderName, '1-torque.jpg'));
 
+% Plot of H's condition number
+H_cond = zeros(NUM_ITER, 1);
+for k = 1:NUM_ITER
+    H_cond(k) = cond(H(:,:,k));
+end
+
+figure;
+plot(t, H_cond, 'DisplayName', 'Hs condition num', 'color', 'r');
+title('Hs condition number vs. time');
+xlabel('Time(s)');
+ylabel('condition number');
 
 for idx = 1:(n/10)
     base_idx = 10 * (idx-1);
-    figure; hold on
+    figure;
     % plot of mass estimates
     subplot(3, 1, 1);
+    hold on
     plot([0, t_f], s_actual(base_idx + 1) * ones(1, 2), 'color', 'b');
-    plot(t, s_hat(:,base_idx + 1), 'color', 'm');
+    plot(t, s_hat(:,base_idx + 1), 'color', 'r');
+    hold off
     
     title(sprintf('link %d - mass est vs. time', idx));
     xlabel('Time(s)');
@@ -106,8 +119,10 @@ for idx = 1:(n/10)
     % plot of first moment estimates
     subplot(3, 1, 2);
     for offset_idx = 2:4
-        plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2));
-        plot(t, s_hat(:,base_idx + offset_idx));
+        hold on
+        plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), 'color', 'b');
+        plot(t, s_hat(:,base_idx + offset_idx), 'color', 'r');
+        hold off
     end
     
     title(sprintf('link %d - first moment of mass est vs. time', idx));
@@ -119,8 +134,10 @@ for idx = 1:(n/10)
     % plot of moment of inertia estimates
     subplot(3, 1, 3);
     for offset_idx = 5:10
-        plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2));
-        plot(t, s_hat(:,base_idx + offset_idx));
+        hold on
+        plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), 'color', 'b');
+        plot(t, s_hat(:,base_idx + offset_idx), 'color', 'r');
+        hold off
     end
     
     title(sprintf('link %d - moment of inertia est vs. time', idx));
@@ -131,62 +148,3 @@ for idx = 1:(n/10)
     
 %     saveas(gcf, strcat(folderName, '2-mass.jpg'));
 end
-
-
-% Plot of residual
-% figure; hold on
-% plot(t, residual(:,1), 'DisplayName', 'residual for torque 1', 'color', 'b');
-% plot(t, residual(:,2), 'DisplayName', 'residual for torque 2', 'color', 'r');
-% 
-% 
-% title('Residual vs. time');
-% xlabel('Time(s)');
-% ylabel('Residual torque(whatever torque is usually in)');
-% 
-% saveas(gcf, strcat(folderName, '5-residual.jpg'));
-
-% Plot of "magnitude" measures of H % TODO plot a measure of rankedness
-% instead
-% figure; hold on
-% H_l1_norm = zeros(NUM_ITER, 1);clo
-% for k = 1:NUM_ITER
-%     H_l1_norm(k) = norm(H(:,:,k), 1);
-% end
-% H_max = zeros(NUM_ITER, 1);
-% for k = 1:NUM_ITER
-%     H_max(k) = max(max(H(:,:,k)));
-% end
-% plot(t, H_l1_norm / 9, 'DisplayName', 'H average magnitude', 'color', 'b');
-% plot(t, H_max, 'DisplayName', 'H max magnitude', 'color', 'r');
-% 
-% title('H magnitude measures vs. time');
-% xlabel('Time(s)');
-% ylabel('unit for an element in H');
-
-% saveas(gcf, strcat(folderName, '5-avg magnitude of H.jpg'));
-
-% Plot of q, qd, qdd
-% figure; hold on
-% subplot(3, 1, 1);
-% plot(t, q(:,1), 'DisplayName', 'joint angles 1', 'color', 'b');
-% plot(t, q(:,2), 'DisplayName', 'joint angles 2', 'color', 'r');
-% 
-% title('Joint angles vs. time');
-% xlabel('Time(s)');
-% ylabel('Joint angle(rad)');
-% 
-% subplot(3, 1, 2);
-% plot(t, qd(:,1), 'DisplayName', 'joint velocity 1', 'color', 'b');
-% plot(t, qd(:,2), 'DisplayName', 'joint velocity 2', 'color', 'r');
-% 
-% title('Joint velocities vs. time');
-% xlabel('Time(s)');
-% ylabel('Joint velocity(rad/s)');
-% 
-% subplot(3, 1, 3);
-% plot(t, qdd(:,1), 'DisplayName', 'joint acceleration 1', 'color', 'b');
-% plot(t, qdd(:,2), 'DisplayName', 'joint acceleration 2', 'color', 'r');
-% 
-% title('Joint accelerations vs. time');
-% xlabel('Time(s)');
-% ylabel('Joint acceleration(rad/s^2)');

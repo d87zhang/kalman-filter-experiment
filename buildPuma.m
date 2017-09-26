@@ -30,32 +30,35 @@ function puma = buildPuma(s)
     L(5) = Link([  0      0        0      -pi/2    0], 'modified');
     L(6) = Link([  0      0        0       pi/2    0], 'modified');
 
-    % TODO parameterize with s
     % specification for s
     % s = [l1_m,
     %      l1_r_x * m, l1_r_y * m, l1_r_z * m,
     %      l1_Ixx, l1_Iyy, l1_Izz, l1_Ixy, l1_Iyz, l1_Ixz,
     %      ... so on for links 2 to n (10 params per link)];
     
-    L(1).m = 0;
-    L(2).m = 17.4;
-    L(3).m = 4.8;
+    for idx = 1:(length(s)/10)
+        base_idx = 10 * (idx-1);
+        L(idx).m = s(base_idx + 1);
+        
+        if L(idx).m ~= 0
+            L(idx).r = s(base_idx + 2:base_idx + 4) / L(idx).m;
+        else
+            L(idx).r = zeros(1, 3);
+        end
+        
+        L(idx).I = s(base_idx + 5:base_idx + 10);
+    end
+    
     L(4).m = 0.82;
     L(5).m = 0.34;
     L(6).m = .09;
 
     %         rx      ry      rz
-    L(1).r = [0   0   0 ];
-    L(2).r = [0.068   0.006   -0.016];
-    L(3).r = [0   -0.070  0.014 ];
     L(4).r = [0   0   -0.019];
     L(5).r = [0   0   0 ];
     L(6).r = [0   0   .032  ];
 
     %        Ixx     Iyy      Izz    Ixy     Iyz     Ixz
-    L(1).I = [0   0   0.35    0   0   0];
-    L(2).I = [.13   .524    .539    0     0   0];
-    L(3).I = [.066    .0125   .066    0   0   0];
     L(4).I = [1.8e-3  1.8e-3  1.3e-3  0   0   0];
     L(5).I = [.3e-3   .3e-3   .4e-3   0   0   0];
     L(6).I = [.15e-3  .15e-3  .04e-3  0   0   0];
