@@ -1,6 +1,6 @@
 function [s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, ...
                                      q, qd, qdd, s_hat_1, robotBuildFunc)
-    global dt t_f NUM_ITER n m;
+    global NUM_ITER n m;
 
     %% specifications
     % s_k = [m1, com_x1, inertia_about_z1, m2, com_x2, inertia_about_z2];
@@ -45,6 +45,7 @@ function [s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, 
         K(:,:,k) = P_minus(:,:,k) * H(:,:,k)' ...
                    * inv(H(:,:,k)*P_minus(:,:,k)*H(:,:,k)' + V*R*V');
         z_tilde_k = inverseDynamics(robotBuildFunc(s_hat_minus(k,:)), q(k,:), qd(k,:), qdd(k,:));
+        z_tilde_k = z_tilde_k(1:m);
         residual(k,:) = z(k,:) - z_tilde_k';
         s_hat(k,:) = s_hat_minus(k,:) + ( K(:,:,k) * residual(k,:)' )'; % TODO look here!
         P(:,:,k) = (eye(n) - K(:,:,k) * H(:,:,k)) * P_minus(:,:,k);
@@ -66,7 +67,7 @@ function [s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, 
             s_deviant(s_idx) = s_deviant(s_idx) + ds(s_idx);
             deviantRobo = robotBuildFunc(s_deviant);
             deviantTorque = inverseDynamics(deviantRobo, q_now, qd_now, qdd_now);
-            H(:, s_idx) = (deviantTorque - baseTorque)./ds(s_idx);
+            H(:, s_idx) = (deviantTorque(1:m) - baseTorque(1:m))./ds(s_idx);
         end
         
         % TODO Testing

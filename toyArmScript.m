@@ -5,7 +5,7 @@ t_f = 5;
 NUM_ITER = t_f / dt + 1;
 t = linspace(0, t_f, NUM_ITER)';
 n = 3 * 10; % dimension of s
-m = 6; % dimension of z
+m = 3; % dimension of z
 
 measurement_sigma = 4 * 1e-1;
 % measurement_sigma = 0;
@@ -28,11 +28,11 @@ robot = buildPuma(s_actual);
 coef_file = matfile('coef.mat');
 coef = coef_file.coef;
 torque = genTorques(coef, t);
-z = torque + normrnd(0, measurement_sigma, NUM_ITER, m);
+z = torque(:,1:m) + normrnd(0, measurement_sigma, NUM_ITER, m);
 
 %% simulate robot
 tic
-[q, qd, qdd] = simulateRobo(robot, torque);
+[q, qd, qdd] = simulateRobo(robot, torque, dt);
 toc
 
 % simulate changing robot
@@ -46,7 +46,7 @@ disp('Done simulating');
 
 %% testing
 % robot.plot(q);
-calculated_torque = zeros(NUM_ITER, m);
+calculated_torque = zeros(NUM_ITER, size(torque, 2));
 for k = 1:NUM_ITER
     calculated_torque(k,:) = inverseDynamics(robot, q(k,:), qd(k,:), qdd(k,:));
 end

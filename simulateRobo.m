@@ -1,10 +1,11 @@
-function [q, qd, qdd] = simulateRobo(robot, torque)
+function [q, qd, qdd] = simulateRobo(robot, torque, dt)
     % Simulate a constant robot
-    global dt t_f NUM_ITER n m;
-
-    q = zeros(NUM_ITER, m);
-    qd = zeros(NUM_ITER, m);
-    qdd = zeros(NUM_ITER, m);
+    NUM_ITER = size(torque, 1);
+    num_joints = size(torque, 2);
+    
+    q = zeros(NUM_ITER, num_joints);
+    qd = zeros(NUM_ITER, num_joints);
+    qdd = zeros(NUM_ITER, num_joints);
 
     for iter = 2:NUM_ITER
         q_now = q(iter-1, :);
