@@ -8,7 +8,6 @@ function [s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, 
 
     % each state is assumed to be independent of each other, so Q is diagonal.
     % similar for R.
-    % TODO tune these to see what happens. Create a function around these
     R = diag(repmat(assumed_measurement_sigma^2, m, 1));
 
     %% Estimation!
@@ -47,7 +46,7 @@ function [s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, 
         z_tilde_k = inverseDynamics(robotBuildFunc(s_hat_minus(k,:)), q(k,:), qd(k,:), qdd(k,:));
         z_tilde_k = z_tilde_k(1:m);
         residual(k,:) = z(k,:) - z_tilde_k';
-        s_hat(k,:) = s_hat_minus(k,:) + ( K(:,:,k) * residual(k,:)' )'; % TODO look here!
+        s_hat(k,:) = s_hat_minus(k,:) + ( K(:,:,k) * residual(k,:)' )';
         P(:,:,k) = (eye(n) - K(:,:,k) * H(:,:,k)) * P_minus(:,:,k);
         
 %         disp(strcat('done iteration ', num2str(k)));
@@ -70,9 +69,6 @@ function [s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, 
             H(:, s_idx) = (deviantTorque(1:m) - baseTorque(1:m))./ds(s_idx);
         end
         
-        % TODO Testing
-%         qdd_now
-%         H
     end
     
 end % function toyArm

@@ -1,7 +1,7 @@
 %% Generate torque coefficients
 m = 6;
 num_sin = 5;
-main_amplitudes = [80, 80, 60, 5, 5, 5]';
+main_amplitudes = 1 * [80, 80, 60, 5, 5, 5]';
 main_periods = [1.89, 2.6, 2.1, 3.1, 1.7, 2.3]';
 secondary_amp_scale = 1/4;
 secondary_period_scale = 1/3;

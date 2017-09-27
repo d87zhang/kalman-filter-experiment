@@ -6,9 +6,10 @@ NUM_ITER = t_f / dt + 1;
 t = linspace(0, t_f, NUM_ITER)';
 n = 3 * 10; % dimension of s
 m = 3; % dimension of z
+NUM_JOINTS = 6;
 
-measurement_sigma = 4 * 1e-1;
-% measurement_sigma = 0;
+% measurement_sigma = 4 * 1e-1;
+measurement_sigma = 0;
 assumed_measurement_sigma = measurement_sigma;
 
 %% build robo
@@ -20,7 +21,8 @@ s_actual(11:20) = [17.4, 17.4*0.068, 17.4*0.006, 17.4*-0.016, ...
 s_actual(21:30) = [4.8, 0, 4.8*-0.070, 4.8*0.014, ...
                   .066    .0125   .066    0   0   0];
 
-s_hat_1 = 1.2 * s_actual; % TODO try something more fun
+MASS_MULTIPLIER = 1; % for making a heavy version of PUMA for better sim
+s_actual = MASS_MULTIPLIER * s_actual;
        
 robot = buildPuma(s_actual);
 
@@ -50,9 +52,11 @@ calculated_torque = zeros(NUM_ITER, size(torque, 2));
 for k = 1:NUM_ITER
     calculated_torque(k,:) = inverseDynamics(robot, q(k,:), qd(k,:), qdd(k,:));
 end
-norm(calculated_torque - torque, 1)/numel(torque)
+norm(calculated_torque(:,1:m) - torque(:,1:m), 1)/numel(torque(:,1:m))
 
 %% estimate parameters
+s_hat_1 = 1.5 * s_actual; % TODO try something more fun
+
 % Q anneals to zero (approaches zero) through exponential decay
 decay_half_life = t_f/6;
 alpha = -log(2) / decay_half_life;
@@ -70,23 +74,7 @@ disp('Done estimating');
 
 %% Plot results!
 folderName = 'C:\Users\Difei\Desktop\toyArm pics\currPlots\';
-YLIM_FACTOR = 3;
-
-% figure; hold on
-% % Plot of torque measurements
-% plot([0, t_f], zeros(1, 2), 'DisplayName', 'zero line', 'color', 'black');
-% plot(t, torque(:,1), 'DisplayName', 'actual torque 1', 'color', 'b');
-% plot(t, torque(:,2), 'DisplayName', 'actual torque 2', 'color', 'r');
-% % plot(t, calculated_torque(:,1), 'DisplayName', 'calc torque 1', 'color', 'c');
-% % plot(t, calculated_torque(:,2), 'DisplayName', 'calc torque 2', 'color', 'magenta');
-% scatter(t, z(:,1), 'DisplayName', 'noisy torque 1 meas');
-% scatter(t, z(:,2), 'DisplayName', 'noisy torque 2 meas');
-% 
-% title('Torque vs. time');
-% xlabel('Time(s)');
-% ylabel('Torque(whatever torque is usually in)');
-% 
-% saveas(gcf, strcat(folderName, '1-torque.jpg'));
+YLIM_FACTOR = 2; 
 
 % Plot of H's condition number
 H_cond = zeros(NUM_ITER, 1);
@@ -96,9 +84,13 @@ end
 
 figure;
 plot(t, H_cond, 'DisplayName', 'Hs condition num', 'color', 'r');
-title('Hs condition number vs. time');
+title(sprintf('Hs condition number vs. time (meas sigma = %0.2e)', measurement_sigma));
 xlabel('Time(s)');
 ylabel('condition number');
+legend('show');
+saveas(gcf, strcat(folderName, '1-H condition number.jpg'));
+
+OFFSET_DESCRIPTION_MAP = containers.Map({2, 3, 4}, {'x', 'y', 'z'});
 
 for idx = 1:(n/10)
     base_idx = 10 * (idx-1);
@@ -120,8 +112,10 @@ for idx = 1:(n/10)
     subplot(3, 1, 2);
     for offset_idx = 2:4
         hold on
-        plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), 'color', 'b');
-        plot(t, s_hat(:,base_idx + offset_idx), 'color', 'r');
+        plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), ...
+            'DisplayName', sprintf('true moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
+        plot(t, s_hat(:,base_idx + offset_idx), ...
+            'DisplayName', sprintf('est moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
         hold off
     end
     
@@ -130,6 +124,7 @@ for idx = 1:(n/10)
     ylabel('first moment(kg*m)');
     max_abs = max([abs(s_actual(base_idx+2:base_idx+4)); 0.1]);
     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+    legend('show');
     
     % plot of moment of inertia estimates
     subplot(3, 1, 3);
@@ -146,5 +141,61 @@ for idx = 1:(n/10)
     max_abs = max([abs(s_actual(base_idx+5:base_idx+10)); 0.1]);
     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
     
-%     saveas(gcf, strcat(folderName, '2-mass.jpg'));
+    saveas(gcf, strcat(folderName, sprintf('%d-estimate joint %d.jpg', idx+1, idx)));
 end
+
+% Plot of residual
+figure; hold on
+for idx = 1:size(residual, 2)
+    plot(t, residual(:,idx), 'DisplayName', sprintf('residual for torque %d', idx));
+end
+
+title('Residual vs. time');
+xlabel('Time(s)');
+ylabel('Residual torque(N*m)');
+
+legend('show');
+saveas(gcf, strcat(folderName, '5-residual.jpg'));
+
+%% More plots
+% Plot of torques
+figure; hold on
+for idx = 1:NUM_JOINTS
+    plot(t, torque(:,idx), 'DisplayName', sprintf('joint %d', idx));
+end
+title('Torque vs. time');
+xlabel('Time(s)');
+ylabel('Torque(N*m)');
+legend('show');
+saveas(gcf, strcat(folderName, '6-torques.jpg'));
+
+%Plot of q's
+figure; hold on
+for idx = 1:NUM_JOINTS
+    plot(t, q(:,idx), 'DisplayName', sprintf('joint %d', idx));
+end
+title('q vs. time');
+xlabel('Time(s)');
+ylabel('Joint angle(rad)');
+legend('show');
+saveas(gcf, strcat(folderName, '7-q.jpg'));
+
+figure; hold on
+for idx = 1:NUM_JOINTS
+    plot(t, qd(:,idx), 'DisplayName', sprintf('joint %d', idx));
+end
+title('qd vs. time');
+xlabel('Time(s)');
+ylabel('Joint velocity(rad/s)');
+legend('show');
+saveas(gcf, strcat(folderName, '8-qd.jpg'));
+
+figure; hold on
+for idx = 1:NUM_JOINTS
+    plot(t, qdd(:,idx), 'DisplayName', sprintf('joint %d', idx));
+end
+title('qdd vs. time');
+xlabel('Time(s)');
+ylabel('Joint angle(rad/s^2)');
+legend('show');
+saveas(gcf, strcat(folderName, '9-qdd.jpg'));
