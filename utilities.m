@@ -19,3 +19,27 @@ for sin_idx = 0:num_sin-1
 end
 
 save coef.mat coef;
+
+%% see how far torque predictions differ..
+s_hat_file = matfile('s_hat_vanilla.mat');
+s_hat_test = s_hat_file.s_hat;
+
+s_est = s_hat_test(end,:);
+robot_est = buildPuma(s_est);
+
+torque_est = zeros(NUM_ITER, size(torque, 2));
+for k = 1:NUM_ITER
+    torque_est(k,:) = inverseDynamics(robot_est, q(k,:), qd(k,:), qdd(k,:));
+end
+residual_est = torque_est - torque;
+
+figure; hold on
+for idx = 1:size(residual_est, 2)
+    plot(t, residual_est(:,idx), 'DisplayName', sprintf('residual for torque %d', idx));
+end
+
+title('Residual vs. time');
+xlabel('Time(s)');
+ylabel('Residual torque(N*m)');
+
+legend('show');
