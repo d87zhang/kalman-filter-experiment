@@ -57,12 +57,22 @@ norm(calculated_torque(:,1:m) - torque(:,1:m), 1)/numel(torque(:,1:m))
 %% estimate parameters
 s_hat_1 = 1.5 * s_actual; % TODO try something more fun
 
+% Q = repmat(0.01 * diag(s_hat_1), 1, 1, NUM_ITER);
+Q_1 = 1 * eye(n);
+% boost Q for mass parameters
+for link_idx = 1:n/10
+    idx = 10*(link_idx-1) + 1;
+    Q_1(idx, idx) = 1000;
+end
+% lower moment of inertia's Q parameters
+Q_1(25:30,:) = 0.01 * Q_1(25:30,:);
+
+Q = repmat(Q_1, 1, 1, NUM_ITER);
+
 % Q anneals to zero (approaches zero) through exponential decay
 decay_half_life = t_f/6;
 alpha = -log(2) / decay_half_life;
 decay_factors = exp(alpha * t);
-% Q = repmat(0.01 * diag(s_hat_1), 1, 1, NUM_ITER);
-Q = repmat(1 * eye(n), 1, 1, NUM_ITER);
 for k = 1:NUM_ITER
     Q(:,:,k) = decay_factors(k) * Q(:,:,k);
 end
