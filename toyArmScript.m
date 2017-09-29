@@ -28,8 +28,10 @@ robot = buildPuma(s_actual);
 
 %% generate torques and measurements
 coef_file = matfile('coef.mat');
-coef = coef_file.coef;
-torque = genTorques(coef, t);
+% coef = coef_file.coef;
+% torque = genTorques(coef, t);
+ff_coef = coef_file.ff_coef;
+torque = genFFTorques(ff_coef, t);
 z = torque(:,1:m) + normrnd(0, measurement_sigma, NUM_ITER, m);
 
 %% simulate robot
