@@ -33,10 +33,11 @@ coef = coef_file.ff_coef;
 
 %% simulate robot
 disp('Start simulating!');
-% TODO change control function
+Kp = [100 100 70 0 0 0]'; % proportional gain
+Kd = [50 50 30 0 0 0]'; % differential gain
 controlFunc = @(t_now, q_desired, q_now, qd_desired, qd_now) ...
-               (sillyControlFunc(t_now, q_desired, q_now, qd_desired, qd_now, ...
-                                 coef, NUM_JOINTS));
+               (pdControlFunc(t_now, q_desired, q_now, qd_desired, qd_now, ...
+                              Kp, Kd));
 tic
 [q, qd, qdd, torque] = simulateRobo(robot, controlFunc, q_desired, qd_desired, t);
 toc

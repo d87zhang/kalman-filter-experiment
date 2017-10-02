@@ -1,17 +1,17 @@
-%% Generate FF torque coefficients
-num_torques = 6;
+%% Generate FF trajectory coefficients
+num_joints = 6;
 num_harmonics = 5;
 % these amplitudes will be fudged, so they are not the exact values
-mean_amplitudes = 1 * [100, 100, 80, 5, 5, 5]';
-mean_offsets = [20, 20, 15, 2, 2, 2]';
-mean_offsets = ((rand(num_torques,1) > 0.5)*2 - 1) .* mean_offsets; % randomly flip signs
+mean_amplitudes = 1 * [5, 5, 5, 5, 5, 5]';
+mean_offsets = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]';
+mean_offsets = ((rand(num_joints,1) > 0.5)*2 - 1) .* mean_offsets; % randomly flip signs
 
-ff_coef = zeros(num_torques, 2*num_harmonics + 1);
+ff_coef = zeros(num_joints, 2*num_harmonics + 1);
 % offsets
-ff_coef(:,end) = normrnd(1, 0.15, num_torques, 1) .* mean_offsets;
+ff_coef(:,end) = normrnd(1, 0.15, num_joints, 1) .* mean_offsets;
 % amplitudes
 mean_amplitudes = repmat(mean_amplitudes, 1, 2*num_harmonics);
-ff_coef(:,1:end-1) = normrnd(1, 0.15, num_torques, 2*num_harmonics) .* mean_amplitudes;
+ff_coef(:,1:end-1) = normrnd(1, 0.15, num_joints, 2*num_harmonics) .* mean_amplitudes;
 
 save('coef.mat', 'ff_coef', '-append');
 

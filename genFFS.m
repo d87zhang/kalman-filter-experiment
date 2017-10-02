@@ -11,7 +11,7 @@ function [out, out_d, out_dd] = genFFS(coef, t)
     m = size(coef, 1);
     NUM_ITER = length(t);
     
-    T_f = 1.2; % fundamental period
+    T_f = 1.5; % fundamental period
     w_f = 2*pi/T_f; % fundamental pulsation
     
     out = repmat(coef(:,end)', NUM_ITER, 1); % apply constant offset
