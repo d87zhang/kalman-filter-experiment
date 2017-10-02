@@ -1,5 +1,5 @@
 %% initialize
-global dt t_f NUM_ITER n m;
+global t_f NUM_ITER n m;
 dt = 0.005;
 t_f = 5;
 NUM_ITER = t_f / dt + 1;
@@ -12,7 +12,7 @@ NUM_JOINTS = 6;
 measurement_sigma = 0;
 assumed_measurement_sigma = measurement_sigma;
 
-%% build robo
+% build robo
 % dynamic parameters
 s_actual = zeros(n, 1);
 s_actual(1:10) = [0, 0, 0, 0, 0   0   0.35    0   0   0];
@@ -26,17 +26,18 @@ s_actual = MASS_MULTIPLIER * s_actual;
        
 robot = buildPuma(s_actual);
 
-%% generate torques and measurements
-coef_file = matfile('coef.mat');
-% coef = coef_file.coef;
-% torque = genTorques(coef, t);
-ff_coef = coef_file.ff_coef;
-torque = genFFS(ff_coef, t);
-z = torque(:,1:m) + normrnd(0, measurement_sigma, NUM_ITER, m);
+%% trajectory gen
+q_desired = zeros(NUM_ITER, NUM_JOINTS); % TODO
 
 %% simulate robot
+disp('Start simulating!');
+coef_file = matfile('coef.mat');
+coef = coef_file.ff_coef;
+torque_coef = coef_file.ff_coef;
+controlFunc = @(t_now, q_desired, q_now) ...
+               (sillyControlFunc(t_now, q_desired, q_now, coef, NUM_JOINTS));
 tic
-[q, qd, qdd] = simulateRobo(robot, torque, dt);
+[q, qd, qdd, torque] = simulateRobo(robot, controlFunc, q_desired, t);
 toc
 
 % simulate changing robot
@@ -48,6 +49,9 @@ toc
 
 disp('Done simulating');
 
+%% generate measurements
+z = torque(:,1:m) + normrnd(0, measurement_sigma, NUM_ITER, m);
+
 %% testing
 % robot.plot(q);
 calculated_torque = zeros(NUM_ITER, size(torque, 2));
@@ -57,6 +61,7 @@ end
 norm(calculated_torque(:,1:m) - torque(:,1:m), 1)/numel(torque(:,1:m))
 
 %% estimate parameters
+disp('Start estimating!');
 s_hat_1 = 1.5 * s_actual; % TODO try something more fun
 
 % Q = repmat(0.01 * diag(s_hat_1), 1, 1, NUM_ITER);
@@ -86,7 +91,7 @@ disp('Done estimating');
 
 %% Plot results!
 folderName = 'C:\Users\Difei\Desktop\toyArm pics\currPlots\';
-YLIM_FACTOR = 2; 
+YLIM_FACTOR = 2;
 
 % Plot of H's condition number
 H_cond = zeros(NUM_ITER, 1);
@@ -211,3 +216,4 @@ xlabel('Time(s)');
 ylabel('Joint angle(rad/s^2)');
 legend('show');
 saveas(gcf, strcat(folderName, '9-qdd.jpg'));
+

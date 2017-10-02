@@ -1,5 +1,5 @@
 function torque = genTorques(coef, t)
-    % Generate torques for testing.
+    % [TODO delete this function] Generate torques for testing.
     % coef - m x p coefficients matrix, where torques are generated for m
     %        joints and uses p/3 sinusoids of the form
     %        a * sin(2*pi/b * t + c). (p must be divisible by 3)
