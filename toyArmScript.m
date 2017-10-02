@@ -26,6 +26,12 @@ s_actual = MASS_MULTIPLIER * s_actual;
        
 robot = buildPuma(s_actual);
 
+% this is so important :)
+[sf1_y, sf1_Fs] = audioread('soundeffects\militarycreation.wav');
+[sf2_y, sf2_Fs] = audioread('soundeffects\villagercreation.wav');
+[sf3_y, sf3_Fs] = audioread('soundeffects\academy.wav');
+[sf4_y, sf4_Fs] = audioread('soundeffects\barracks.wav');
+
 %% trajectory gen
 coef_file = matfile('coef.mat');
 coef = coef_file.ff_coef;
@@ -33,8 +39,8 @@ coef = coef_file.ff_coef;
 
 %% simulate robot
 disp('Start simulating!');
-Kp = [100 100 70 0 0 0]'; % proportional gain
-Kd = [50 50 30 0 0 0]'; % differential gain
+Kp = [500 2000 400 0 0 0]'; % proportional gain
+Kd = [55 150 40 0 0 0]'; % differential gain
 controlFunc = @(t_now, q_desired, q_now, qd_desired, qd_now) ...
                (pdControlFunc(t_now, q_desired, q_now, qd_desired, qd_now, ...
                               Kp, Kd));
@@ -50,6 +56,11 @@ toc
 % toc
 
 disp('Done simulating \[T]/');
+if rand() > 0.5
+    sound(sf1_y, sf1_Fs);
+else
+    sound(sf2_y, sf2_Fs);
+end
 
 %% generate measurements
 z = torque(:,1:m) + normrnd(0, measurement_sigma, NUM_ITER, m);
@@ -90,6 +101,11 @@ tic
 [s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, q, qd, qdd, s_hat_1, @buildPuma);
 toc
 disp('Done estimating \[T]/');
+if rand() > 0.5
+    sound(sf3_y, sf1_Fs);
+else
+    sound(sf4_y, sf2_Fs);
+end
 
 %% Plot results!
 folderName = 'C:\Users\Difei\Desktop\toyArm pics\currPlots\';
