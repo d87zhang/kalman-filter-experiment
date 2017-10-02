@@ -27,17 +27,18 @@ s_actual = MASS_MULTIPLIER * s_actual;
 robot = buildPuma(s_actual);
 
 %% trajectory gen
-q_desired = zeros(NUM_ITER, NUM_JOINTS); % TODO
+coef_file = matfile('coef.mat');
+coef = coef_file.ff_coef;
+[q_desired, qd_desired, qdd_desired] = genFFS(coef, t);
 
 %% simulate robot
 disp('Start simulating!');
-coef_file = matfile('coef.mat');
-coef = coef_file.ff_coef;
-torque_coef = coef_file.ff_coef;
-controlFunc = @(t_now, q_desired, q_now) ...
-               (sillyControlFunc(t_now, q_desired, q_now, coef, NUM_JOINTS));
+% TODO change control function
+controlFunc = @(t_now, q_desired, q_now, qd_desired, qd_now) ...
+               (sillyControlFunc(t_now, q_desired, q_now, qd_desired, qd_now, ...
+                                 coef, NUM_JOINTS));
 tic
-[q, qd, qdd, torque] = simulateRobo(robot, controlFunc, q_desired, t);
+[q, qd, qdd, torque] = simulateRobo(robot, controlFunc, q_desired, qd_desired, t);
 toc
 
 % simulate changing robot
@@ -47,7 +48,7 @@ toc
 % [q, qd, qdd] = simulateChangingRobo(s, torque);
 % toc
 
-disp('Done simulating');
+disp('Done simulating \[T]/');
 
 %% generate measurements
 z = torque(:,1:m) + normrnd(0, measurement_sigma, NUM_ITER, m);
@@ -87,7 +88,7 @@ end
 tic
 [s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, q, qd, qdd, s_hat_1, @buildPuma);
 toc
-disp('Done estimating');
+disp('Done estimating \[T]/');
 
 %% Plot results!
 folderName = 'C:\Users\Difei\Desktop\toyArm pics\currPlots\';

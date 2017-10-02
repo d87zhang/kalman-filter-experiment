@@ -1,3 +1,5 @@
+TODO [WARNING] this README is outdated.
+
 A toy experiment with the Extended Kalman Filter
 
 The main experiment is with a 2-link planar manipulator. See toyArmScript.m.

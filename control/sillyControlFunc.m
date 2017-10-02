@@ -1,4 +1,4 @@
-function torque = sillyControlFunc(t_now, q_desired, q_now, coef, NUM_JOINTS)
+function torque = sillyControlFunc(t_now, q_desired, q_now, qd_desired, qd_now, coef, NUM_JOINTS)
     % Returns control output (torque) as a row vector
     assert(mod(size(coef, 2), 2) == 1);
     N = (size(coef, 2) - 1) / 2; % num of harmonics
