@@ -77,8 +77,10 @@ norm(calculated_torque(:,1:m) - torque(:,1:m), 1)/numel(torque(:,1:m))
 disp('Start estimating!');
 s_hat_1 = 1.5 * s_actual; % TODO try something more fun
 
-% each state is assumed to be independent of each other, so Q is diagonal.
-% Q = repmat(0.01 * diag(s_hat_1), 1, 1, NUM_ITER);
+% method 1: scale Q according to initial guesses
+% Q_1 = 5 * diag(min(s_hat_1.^2, 0.1 * ones(size(s_hat_1))));
+
+% method 2: set Q to identity, but scale parts from experience...
 Q_1 = 1 * eye(n);
 % boost Q for mass parameters
 for link_idx = 1:n/10
