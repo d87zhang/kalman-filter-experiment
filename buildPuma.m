@@ -1,5 +1,5 @@
 function puma = buildPuma(s)
-    % adapted from the mdl_puma560.m script provided The Robotics
+    % adapted from the mdl_puma560akb.m script provided The Robotics
     % Toolbox by Peter I. Corke.
     
     % his license stuff is copied below

@@ -8,7 +8,7 @@ n = 3 * 10; % dimension of s
 m = 3; % dimension of z
 NUM_JOINTS = 6;
 
-% measurement_sigma = 4 * 1e-1;
+% measurement_sigma = 10 * 1e0;
 measurement_sigma = 0;
 assumed_measurement_sigma = measurement_sigma;
 
@@ -67,7 +67,6 @@ end
 z = torque(:,1:m) + normrnd(0, measurement_sigma, NUM_ITER, m);
 
 %% testing
-% robot.plot(q);
 calculated_torque = zeros(NUM_ITER, size(torque, 2));
 for k = 1:NUM_ITER
     calculated_torque(k,:) = inverseDynamics(robot, q(k,:), qd(k,:), qdd(k,:));
@@ -78,6 +77,7 @@ norm(calculated_torque(:,1:m) - torque(:,1:m), 1)/numel(torque(:,1:m))
 disp('Start estimating!');
 s_hat_1 = 1.5 * s_actual; % TODO try something more fun
 
+% each state is assumed to be independent of each other, so Q is diagonal.
 % Q = repmat(0.01 * diag(s_hat_1), 1, 1, NUM_ITER);
 Q_1 = 1 * eye(n);
 % boost Q for mass parameters
@@ -98,8 +98,12 @@ for k = 1:NUM_ITER
     Q(:,:,k) = decay_factors(k) * Q(:,:,k);
 end
 
+% ds = small difference in states used for numerical differentiation
+ds = max(s_hat_1 * 0.01, 0.001*ones(size(s_hat_1)));
+
 tic
-[s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, q, qd, qdd, s_hat_1, @buildPuma);
+[s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, ...
+                                      q, qd, qdd, s_hat_1, ds, @buildPuma);
 toc
 disp('Done estimating \[T]/');
 if rand() > 0.5

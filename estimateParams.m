@@ -1,13 +1,9 @@
 function [s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, ...
-                                     q, qd, qdd, s_hat_1, robotBuildFunc)
-    global NUM_ITER n m;
+                                     q, qd, qdd, s_hat_1, ds, robotBuildFunc)
+    NUM_ITER = size(z, 1);
+    m = size(z, 2);
+    n = length(s_hat_1);
 
-    %% specifications
-    % s_k = [m1, com_x1, inertia_about_z1, m2, com_x2, inertia_about_z2];
-    % z_k = [t1, t2];
-
-    % each state is assumed to be independent of each other, so Q is diagonal.
-    % similar for R.
     R = diag(repmat(assumed_measurement_sigma^2, m, 1));
 
     %% Estimation!
@@ -21,8 +17,6 @@ function [s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, 
     s_hat(1, :) = s_hat_1;
     P(:, :, 1) = eye(n, n);
     
-    % small difference in states used for numerical differentiation wrt s
-    ds = 0.01 * ones(n, 1);
     % calculate Jacobian matrices that stay constant...
     A = eye(n);
     W = eye(n);
@@ -52,7 +46,6 @@ function [s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, 
 %         disp(strcat('done iteration ', num2str(k)));
     end
     
-    
     %% helper functions
     function H = computeH(s_hat_minus_k, q_now, qd_now, qdd_now)
         % Computes the Jacobian matrix H numerically
@@ -71,4 +64,4 @@ function [s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, 
         
     end
     
-end % function toyArm
+end
