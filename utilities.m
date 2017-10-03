@@ -2,7 +2,7 @@
 num_joints = 6;
 num_harmonics = 5;
 % these amplitudes will be fudged, so they are not the exact values
-mean_amplitudes = 1 * [5, 5, 5, 5, 5, 5]';
+mean_amplitudes = 1 * [2.5, 1.8, 2.5, 2.5, 2.5, 2.5]';
 mean_offsets = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]';
 mean_offsets = ((rand(num_joints,1) > 0.5)*2 - 1) .* mean_offsets; % randomly flip signs
 

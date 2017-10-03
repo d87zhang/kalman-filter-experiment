@@ -35,15 +35,16 @@ robot = buildPuma(s_actual);
 %% trajectory gen
 coef_file = matfile('coef.mat');
 coef = coef_file.ff_coef;
-[q_desired, qd_desired, qdd_desired] = genFFS(coef, t);
+t_offsets = [0.4, -0.8, 0.7, 0 0 0];
+[q_desired, qd_desired, qdd_desired] = genFFS(coef, t, t_offsets);
 
 %% simulate robot
 disp('Start simulating!');
-Kp = [500 2000 400 0 0 0]'; % proportional gain
-Kd = [55 150 40 0 0 0]'; % differential gain
+Kp = [150 240 120 0 0 0]'; % proportional gain
+Kd = [33 41 16 0 0 0]'; % differential gain
 controlFunc = @(t_now, q_desired, q_now, qd_desired, qd_now) ...
                (pdControlFunc(t_now, q_desired, q_now, qd_desired, qd_now, ...
-                              Kp, Kd));
+                              Kp, Kd, 3));
 tic
 [q, qd, qdd, torque] = simulateRobo(robot, controlFunc, q_desired, qd_desired, t);
 toc
