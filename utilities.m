@@ -15,6 +15,23 @@ ff_coef(:,1:end-1) = normrnd(1, 0.15, num_joints, 2*num_harmonics) .* mean_ampli
 
 save('coef.mat', 'ff_coef', '-append');
 
+%% Generate simple FF torque coefficients
+num_joints = 3;
+num_harmonics = 5;
+% these amplitudes will be fudged, so they are not the exact values
+mean_amplitudes = 1 * [15, 15, 15]';
+mean_offsets = [10, 10, 10]';
+mean_offsets = ((rand(num_joints,1) > 0.5)*2 - 1) .* mean_offsets; % randomly flip signs
+
+simple_ff_coef = zeros(num_joints, 2*num_harmonics + 1);
+% offsets
+simple_ff_coef(:,end) = normrnd(1, 0.15, num_joints, 1) .* mean_offsets;
+% amplitudes
+mean_amplitudes = repmat(mean_amplitudes, 1, 2*num_harmonics);
+simple_ff_coef(:,1:end-1) = normrnd(1, 0.15, num_joints, 2*num_harmonics) .* mean_amplitudes;
+
+save('coef.mat', 'simple_ff_coef', '-append');
+
 %% see how far torque predictions differ..
 s_hat_file = matfile('s_hat_vanilla.mat');
 s_hat_test = s_hat_file.s_hat;

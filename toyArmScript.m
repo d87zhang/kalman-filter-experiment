@@ -4,27 +4,34 @@ dt = 0.005;
 t_f = 5;
 NUM_ITER = t_f / dt + 1;
 t = linspace(0, t_f, NUM_ITER)';
-n = 3 * 10; % dimension of s
-m = 3; % dimension of z
-NUM_JOINTS = 6;
+% n = 3 * 10; % dimension of s
+n = 5;
+m = 2; % dimension of z
+NUM_JOINTS = 3;
 
 % measurement_sigma = 10 * 1e0;
 measurement_sigma = 0;
 assumed_measurement_sigma = measurement_sigma;
 
 % build robo
+% robot_build_func = @buildPuma;
 % dynamic parameters
-s_actual = zeros(n, 1);
-s_actual(1:10) = [0, 0, 0, 0, 0   0   0.35    0   0   0];
-s_actual(11:20) = [17.4, 17.4*0.068, 17.4*0.006, 17.4*-0.016, ...
-                  .13   .524    .539    0     0   0];
-s_actual(21:30) = [4.8, 0, 4.8*-0.070, 4.8*0.014, ...
-                  .066    .0125   .066    0   0   0];
+% s_actual = zeros(n, 1);
+% s_actual(1:10) = [0, 0, 0, 0, 0   0   0.35    0   0   0];
+% s_actual(11:20) = [17.4, 17.4*0.068, 17.4*0.006, 17.4*-0.016, ...
+%                   .13   .524    .539    0     0   0];
+% s_actual(21:30) = [4.8, 0, 4.8*-0.070, 4.8*0.014, ...
+%                   .066    .0125   .066    0   0   0];
+% 
+% MASS_MULTIPLIER = 1; % for making a heavy version of PUMA for better sim
+% s_actual = MASS_MULTIPLIER * s_actual;
+%        
 
-MASS_MULTIPLIER = 1; % for making a heavy version of PUMA for better sim
-s_actual = MASS_MULTIPLIER * s_actual;
-       
-robot = buildPuma(s_actual);
+% build robo (but it fake)
+robot_build_func = @(s)(FakeRobo(s, NUM_JOINTS));
+s_actual = [2.4, 6, 3.7, 7.3, 4];
+
+robot = robot_build_func(s_actual);
 
 % this is so important :)
 [sf1_y, sf1_Fs] = audioread('soundeffects\militarycreation.wav');
@@ -42,9 +49,16 @@ t_offsets = [0.4, -0.8, 0.7, 0 0 0];
 disp('Start simulating!');
 Kp = [150 240 120 0 0 0]'; % proportional gain
 Kd = [33 41 16 0 0 0]'; % differential gain
+% controlFunc = @(t_now, q_desired, q_now, qd_desired, qd_now) ...
+%                (pdControlFunc(t_now, q_desired, q_now, qd_desired, qd_now, ...
+%                               Kp, Kd, 3));
+
+% for fake robot
+simple_coef = coef_file.simple_ff_coef;
+control_out = genFFS(simple_coef, t, [0, 1, 2]);
 controlFunc = @(t_now, q_desired, q_now, qd_desired, qd_now) ...
-               (pdControlFunc(t_now, q_desired, q_now, qd_desired, qd_now, ...
-                              Kp, Kd, 3));
+               (control_out(round(t_now/dt) + 1,:));
+
 tic
 [q, qd, qdd, torque] = simulateRobo(robot, controlFunc, q_desired, qd_desired, t);
 toc
@@ -105,7 +119,7 @@ ds = max(s_hat_1 * 0.01, 0.001*ones(size(s_hat_1)));
 
 tic
 [s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, ...
-                                      q, qd, qdd, s_hat_1, ds, @buildPuma);
+                                      q, qd, qdd, s_hat_1, ds, robot_build_func);
 toc
 disp('Done estimating \[T]/');
 if rand() > 0.5
