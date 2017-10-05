@@ -34,9 +34,10 @@ function puma = buildEasyPuma(s)
 
 
     L(1).m = 0;
-    L(2).m = 17.4;    
+%     L(2).m = 17.4;
+    L(2).m = s(2);
 %     L(3).m = 4.8;
-    L(3).m = s(1);
+    L(3).m = s(3);
     L(4).m = 0.82;
     L(5).m = 0.34;
     L(6).m = .09;
@@ -53,6 +54,7 @@ function puma = buildEasyPuma(s)
 
     %        Ixx     Iyy      Izz    Ixy     Iyz     Ixz
     L(1).I = [0   0   0.35    0   0   0];
+    L(1).I = [0   0   s(1)    0   0   0];
     L(2).I = [.13   .524    .539    0     0   0];
     L(3).I = [.066    .0125   .066    0   0   0];
     L(4).I = [1.8e-3  1.8e-3  1.3e-3  0   0   0];

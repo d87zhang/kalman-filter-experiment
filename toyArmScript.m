@@ -1,17 +1,18 @@
 %% initialize
 global t_f NUM_ITER n m;
-dt = 0.005;
+dt = 0.001;
 t_f = 5;
 NUM_ITER = t_f / dt + 1;
 t = linspace(0, t_f, NUM_ITER)';
 % n = 3 * 10; % dimension of s
-n = 1;
+n = 3;
 m = 3; % dimension of z
 NUM_JOINTS = 6;
 
 % measurement_sigma = 10 * 1e0;
 measurement_sigma = 0;
-assumed_measurement_sigma = measurement_sigma;
+% assumed_measurement_sigma = measurement_sigma;
+assumed_measurement_sigma = 50;
 
 % build robo
 robot_build_func = @buildEasyPuma;
@@ -27,7 +28,7 @@ robot_build_func = @buildEasyPuma;
 % s_actual = [0, 0, 0.35, ...
 %             17.4, 17.4*0.068, .539, ...
 %             4.8, 4.8*-0.070, .066];
-s_actual = [4.8];
+s_actual = [0.35, 17.4, 4.8];
 
 MASS_MULTIPLIER = 1; % for making a heavy version of PUMA for better sim
 s_actual = MASS_MULTIPLIER * s_actual;        
@@ -90,7 +91,22 @@ calculated_torque = zeros(NUM_ITER, size(torque, 2));
 for k = 1:NUM_ITER
     calculated_torque(k,:) = inverseDynamics(robot, q(k,:), qd(k,:), qdd(k,:));
 end
-norm(calculated_torque(:,1:m) - torque(:,1:m), 1)/numel(torque(:,1:m))
+norm(calculated_torque(:,1:m) - torque(:,1:m), 1)
+
+% % plot the f*cker
+% figure; hold on
+% for idx = 1:m
+%     plot(t, torque(:, idx), 'DisplayName', sprintf('true torque - %d', idx));
+%     plot(t, calculated_torque(:, idx), 'DisplayName', sprintf('calc torque - %d', idx));
+% end
+% legend('show');
+% 
+% figure; hold on
+% for idx = 1:m
+%     plot(t, calculated_torque(:, idx), 'DisplayName', sprintf('calc torque - %d', idx));
+% end
+% legend('show');
+% title('Just the calculated torques');
 
 %% estimate parameters
 disp('Start estimating!');
@@ -100,7 +116,7 @@ s_hat_1 = 1.5 * s_actual; % TODO try something more fun
 % Q_1 = 5 * diag(min(s_hat_1.^2, 0.1 * ones(size(s_hat_1))));
 
 % method 2: set Q to identity, but scale parts from experience...
-Q_1 = 1e-6 * eye(n);
+Q_1 = 1 * eye(n);
 % boost Q for mass parameters
 % for link_idx = 1:n/10
 %     idx = 10*(link_idx-1) + 1;
@@ -111,7 +127,7 @@ Q_1 = 1e-6 * eye(n);
 
 Q = repmat(Q_1, 1, 1, NUM_ITER);
 
-% Q anneals to zero (approaches zero) through exponential decay
+% % Q anneals to zero (approaches zero) through exponential decay
 decay_half_life = t_f/6;
 alpha = -log(2) / decay_half_life;
 decay_factors = exp(alpha * t);
@@ -123,8 +139,8 @@ end
 ds = max(s_hat_1 * 0.01, 0.001*ones(size(s_hat_1)));
 
 tic
-[s_hat, H, residual] = estimateParams(z, assumed_measurement_sigma, Q, ...
-                                      q, qd, qdd, s_hat_1, ds, robot_build_func);
+[s_hat, H, residual, P_minus, P] = estimateParams(z, assumed_measurement_sigma, Q, ...
+                                                  q, qd, qdd, s_hat_1, ds, robot_build_func);
 toc
 disp('Done estimating \[T]/');
 if rand() > 0.5
@@ -138,18 +154,18 @@ folderName = 'C:\Users\Difei\Desktop\toyArm pics\currPlots\';
 YLIM_FACTOR = 2;
 
 % Plot of H's condition number
-% H_cond = zeros(NUM_ITER, 1);
-% for k = 1:NUM_ITER
-%     H_cond(k) = cond(H(:,:,k));
-% end
-% 
-% figure;
-% plot(t, H_cond, 'DisplayName', 'Hs condition num', 'color', 'r');
-% title(sprintf('Hs condition number vs. time (meas sigma = %0.2e)', measurement_sigma));
-% xlabel('Time(s)');
-% ylabel('condition number');
-% legend('show');
-% saveas(gcf, strcat(folderName, '1-H condition number.jpg'));
+H_cond = zeros(NUM_ITER, 1);
+for k = 1:NUM_ITER
+    H_cond(k) = cond(H(:,:,k));
+end
+
+figure;
+plot(t, H_cond, 'DisplayName', 'Hs condition num', 'color', 'r');
+title(sprintf('Hs condition number vs. time (meas sigma = %0.2e)', measurement_sigma));
+xlabel('Time(s)');
+ylabel('condition number');
+legend('show');
+saveas(gcf, strcat(folderName, '1-H condition number.jpg'));
 
 % OFFSET_DESCRIPTION_MAP = containers.Map({2, 3, 4}, {'x', 'y', 'z'});
 % 
@@ -205,17 +221,19 @@ YLIM_FACTOR = 2;
 %     saveas(gcf, strcat(folderName, sprintf('%d-estimate joint %d.jpg', idx+1, idx)));
 % end
 
-for idx = 1:1
+for idx = 1:3
     figure
 %     subplot(3, 1, 1); hold on
     hold on;
     plot([0, t_f], s_actual(1*(idx-1) + 1) * ones(1, 2), 'color', 'b');
     plot(t, s_hat(:,1*(idx-1) + 1), 'color', 'r');
-    title(sprintf('link %d - mass vs. time', idx));
+    title(sprintf('link %d - something vs. time', idx));
     xlabel('Time(s)');
-    ylabel('mass(kg)');
+    ylabel('something(??)');
     max_abs = max([abs(s_actual(1*(idx-1) + 1)), 0.1]);
     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+    
+    saveas(gcf, strcat(folderName, sprintf('%d-estimate joint %d.jpg', idx+1, idx)));
     
 %     subplot(3, 1, 2); hold on
 %     plot([0, t_f], s_actual(3*(idx-1) + 2) * ones(1, 2), 'color', 'b');
