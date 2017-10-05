@@ -4,31 +4,31 @@ dt = 0.001;
 t_f = 5;
 NUM_ITER = t_f / dt + 1;
 t = linspace(0, t_f, NUM_ITER)';
-% n = 3 * 10; % dimension of s
-n = 3;
+n = 3 * 10; % dimension of s
+% n = 3;
 m = 3; % dimension of z
 NUM_JOINTS = 6;
 
 % measurement_sigma = 10 * 1e0;
 measurement_sigma = 0;
 % assumed_measurement_sigma = measurement_sigma;
-assumed_measurement_sigma = 50;
+assumed_measurement_sigma = measurement_sigma + 50;
 
 % build robo
-robot_build_func = @buildEasyPuma;
+robot_build_func = @buildPuma;
 % dynamic parameters
-% s_actual = zeros(n, 1);
-% s_actual(1:10) = [0, 0, 0, 0, 0   0   0.35    0   0   0];
-% s_actual(11:20) = [17.4, 17.4*0.068, 17.4*0.006, 17.4*-0.016, ...
-%                   .13   .524    .539    0     0   0];
-% s_actual(21:30) = [4.8, 0, 4.8*-0.070, 4.8*0.014, ...
-%                   .066    .0125   .066    0   0   0];
+s_actual = zeros(n, 1);
+s_actual(1:10) = [0, 0, 0, 0, 0   0   0.35    0   0   0];
+s_actual(11:20) = [17.4, 17.4*0.068, 17.4*0.006, 17.4*-0.016, ...
+                  .13   .524    .539    0     0   0];
+s_actual(21:30) = [4.8, 0, 4.8*-0.070, 4.8*0.014, ...
+                  .066    .0125   .066    0   0   0];
 % here s contains 3 elements for each link: m, first moment about x, moment
 % of inertia about z (zz)
 % s_actual = [0, 0, 0.35, ...
 %             17.4, 17.4*0.068, .539, ...
 %             4.8, 4.8*-0.070, .066];
-s_actual = [0.35, 17.4, 4.8];
+% s_actual = [0.35, 17.4, 4.8];
 
 MASS_MULTIPLIER = 1; % for making a heavy version of PUMA for better sim
 s_actual = MASS_MULTIPLIER * s_actual;        
@@ -118,12 +118,12 @@ s_hat_1 = 1.5 * s_actual; % TODO try something more fun
 % method 2: set Q to identity, but scale parts from experience...
 Q_1 = 1 * eye(n);
 % boost Q for mass parameters
-% for link_idx = 1:n/10
-%     idx = 10*(link_idx-1) + 1;
-%     Q_1(idx, idx) = 1000;
-% end
-% % lower moment of inertia's Q parameters
-% Q_1(25:30,:) = 0.01 * Q_1(25:30,:);
+for link_idx = 1:n/10
+    idx = 10*(link_idx-1) + 1;
+    Q_1(idx, idx) = 1000;
+end
+% lower moment of inertia's Q parameters
+Q_1(25:30,:) = 0.01 * Q_1(25:30,:);
 
 Q = repmat(Q_1, 1, 1, NUM_ITER);
 
@@ -167,92 +167,92 @@ ylabel('condition number');
 legend('show');
 saveas(gcf, strcat(folderName, '1-H condition number.jpg'));
 
-% OFFSET_DESCRIPTION_MAP = containers.Map({2, 3, 4}, {'x', 'y', 'z'});
-% 
-% for idx = 1:(n/10)
-%     base_idx = 10 * (idx-1);
-%     figure;
-%     % plot of mass estimates
-%     subplot(3, 1, 1);
-%     hold on
-%     plot([0, t_f], s_actual(base_idx + 1) * ones(1, 2), 'color', 'b');
-%     plot(t, s_hat(:,base_idx + 1), 'color', 'r');
-%     hold off
-%     
-%     title(sprintf('link %d - mass est vs. time', idx));
-%     xlabel('Time(s)');
-%     ylabel('mass(kg)');
-%     max_abs = max([abs(s_actual(base_idx + 1)); 0.1]);
-%     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-%     
-%     % plot of first moment estimates
-%     subplot(3, 1, 2);
-%     for offset_idx = 2:4
-%         hold on
-%         plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), ...
-%             'DisplayName', sprintf('true moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
-%         plot(t, s_hat(:,base_idx + offset_idx), ...
-%             'DisplayName', sprintf('est moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
-%         hold off
-%     end
-%     
-%     title(sprintf('link %d - first moment of mass est vs. time', idx));
-%     xlabel('Time(s)');
-%     ylabel('first moment(kg*m)');
-%     max_abs = max([abs(s_actual(base_idx+2:base_idx+4)); 0.1]);
-%     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-%     legend('show');
-%     
-%     % plot of moment of inertia estimates
-%     subplot(3, 1, 3);
-%     for offset_idx = 5:10
-%         hold on
-%         plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), 'color', 'b');
-%         plot(t, s_hat(:,base_idx + offset_idx), 'color', 'r');
-%         hold off
-%     end
-%     
-%     title(sprintf('link %d - moment of inertia est vs. time', idx));
-%     xlabel('Time(s)');
-%     ylabel('Moment of inertia(kg*m^2)');
-%     max_abs = max([abs(s_actual(base_idx+5:base_idx+10)); 0.1]);
-%     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-%     
-%     saveas(gcf, strcat(folderName, sprintf('%d-estimate joint %d.jpg', idx+1, idx)));
-% end
+OFFSET_DESCRIPTION_MAP = containers.Map({2, 3, 4}, {'x', 'y', 'z'});
 
-for idx = 1:3
-    figure
-%     subplot(3, 1, 1); hold on
-    hold on;
-    plot([0, t_f], s_actual(1*(idx-1) + 1) * ones(1, 2), 'color', 'b');
-    plot(t, s_hat(:,1*(idx-1) + 1), 'color', 'r');
-    title(sprintf('link %d - something vs. time', idx));
+for idx = 1:(n/10)
+    base_idx = 10 * (idx-1);
+    figure;
+    % plot of mass estimates
+    subplot(3, 1, 1);
+    hold on
+    plot([0, t_f], s_actual(base_idx + 1) * ones(1, 2), 'color', 'b');
+    plot(t, s_hat(:,base_idx + 1), 'color', 'r');
+    hold off
+    
+    title(sprintf('link %d - mass est vs. time', idx));
     xlabel('Time(s)');
-    ylabel('something(??)');
-    max_abs = max([abs(s_actual(1*(idx-1) + 1)), 0.1]);
+    ylabel('mass(kg)');
+    max_abs = max([abs(s_actual(base_idx + 1)); 0.1]);
+    ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+    
+    % plot of first moment estimates
+    subplot(3, 1, 2);
+    for offset_idx = 2:4
+        hold on
+        plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), ...
+            'DisplayName', sprintf('true moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
+        plot(t, s_hat(:,base_idx + offset_idx), ...
+            'DisplayName', sprintf('est moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
+        hold off
+    end
+    
+    title(sprintf('link %d - first moment of mass est vs. time', idx));
+    xlabel('Time(s)');
+    ylabel('first moment(kg*m)');
+    max_abs = max([abs(s_actual(base_idx+2:base_idx+4)); 0.1]);
+    ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+    legend('show');
+    
+    % plot of moment of inertia estimates
+    subplot(3, 1, 3);
+    for offset_idx = 5:10
+        hold on
+        plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), 'color', 'b');
+        plot(t, s_hat(:,base_idx + offset_idx), 'color', 'r');
+        hold off
+    end
+    
+    title(sprintf('link %d - moment of inertia est vs. time', idx));
+    xlabel('Time(s)');
+    ylabel('Moment of inertia(kg*m^2)');
+    max_abs = max([abs(s_actual(base_idx+5:base_idx+10)); 0.1]);
     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
     
     saveas(gcf, strcat(folderName, sprintf('%d-estimate joint %d.jpg', idx+1, idx)));
-    
-%     subplot(3, 1, 2); hold on
-%     plot([0, t_f], s_actual(3*(idx-1) + 2) * ones(1, 2), 'color', 'b');
-%     plot(t, s_hat(:,3*(idx-1) + 2), 'color', 'r');
-%     title(sprintf('link %d - first moment about x vs. time', idx));
+end
+
+% for idx = 1:3
+%     figure
+% %     subplot(3, 1, 1); hold on
+%     hold on;
+%     plot([0, t_f], s_actual(1*(idx-1) + 1) * ones(1, 2), 'color', 'b');
+%     plot(t, s_hat(:,1*(idx-1) + 1), 'color', 'r');
+%     title(sprintf('link %d - something vs. time', idx));
 %     xlabel('Time(s)');
-%     ylabel('first moment(kg*m)');
-%     max_abs = max([abs(s_actual(3*(idx-1) + 2)), 0.1]);
+%     ylabel('something(??)');
+%     max_abs = max([abs(s_actual(1*(idx-1) + 1)), 0.1]);
 %     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
 %     
-%     subplot(3, 1, 3); hold on
-%     plot([0, t_f], s_actual(3*(idx-1) + 3) * ones(1, 2), 'color', 'b');
-%     plot(t, s_hat(:,3*(idx-1) + 3), 'color', 'r');
-%     title(sprintf('link %d - moment of inertia vs. time', idx));
-%     xlabel('Time(s)');
-%     ylabel('moment of inertia(kg*m^2)');
-%     max_abs = max([abs(s_actual(3*(idx-1) + 3)), 0.1]);
-%     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-end
+%     saveas(gcf, strcat(folderName, sprintf('%d-estimate joint %d.jpg', idx+1, idx)));
+%     
+% %     subplot(3, 1, 2); hold on
+% %     plot([0, t_f], s_actual(3*(idx-1) + 2) * ones(1, 2), 'color', 'b');
+% %     plot(t, s_hat(:,3*(idx-1) + 2), 'color', 'r');
+% %     title(sprintf('link %d - first moment about x vs. time', idx));
+% %     xlabel('Time(s)');
+% %     ylabel('first moment(kg*m)');
+% %     max_abs = max([abs(s_actual(3*(idx-1) + 2)), 0.1]);
+% %     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+% %     
+% %     subplot(3, 1, 3); hold on
+% %     plot([0, t_f], s_actual(3*(idx-1) + 3) * ones(1, 2), 'color', 'b');
+% %     plot(t, s_hat(:,3*(idx-1) + 3), 'color', 'r');
+% %     title(sprintf('link %d - moment of inertia vs. time', idx));
+% %     xlabel('Time(s)');
+% %     ylabel('moment of inertia(kg*m^2)');
+% %     max_abs = max([abs(s_actual(3*(idx-1) + 3)), 0.1]);
+% %     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+% end
 
 % Plot of residual
 figure; hold on
