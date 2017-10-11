@@ -53,13 +53,36 @@ coef = coef_file.ff_coef;
 t_offsets = [0.4, -0.8, 0.7, 0 0 0];
 [q_desired, qd_desired, qdd_desired] = genFFS(coef, t, t_offsets);
 
+% hold trajectory still after a certain time
+t_quintic_0 = 1;
+t_hold_still = 1.5;
+idx_quintic_0 = t_quintic_0/dt + 1;
+idx_hold_still = t_hold_still/dt + 1;
+
+[ret1, ret2, ret3] = quinticTraj(q_desired(idx_quintic_0,:), ...
+                                 qd_desired(idx_quintic_0,:), ...
+                                 qdd_desired(idx_quintic_0,:), ...
+                                 q_desired(idx_quintic_0,:), ...
+                                 zeros(1, NUM_JOINTS), ...
+                                 zeros(1, NUM_JOINTS), ...
+                                 t(idx_quintic_0:idx_hold_still));
+q_desired(idx_quintic_0:idx_hold_still,:) = ret1;
+qd_desired(idx_quintic_0:idx_hold_still,:) = ret2;
+qdd_desired(idx_quintic_0:idx_hold_still,:) = ret3;
+
+q_desired(idx_hold_still:end, :) = repmat(q_desired(idx_hold_still, :), ...
+                                          NUM_ITER - idx_hold_still + 1, 1);
+qd_desired(idx_hold_still:end, :) = zeros(size(qd_desired(idx_hold_still:end, :)));
+qdd_desired(idx_hold_still:end, :) = zeros(size(qdd_desired(idx_hold_still:end, :)));
+
 %% simulate robot
 disp('Start simulating!');
 Kp = [150 240 120 0 0 0]'; % proportional gain
 Kd = [33 41 16 0 0 0]'; % differential gain
 controlFunc = @(t_now, q_desired, q_now, qd_desired, qd_now) ...
-               (pdControlFunc(t_now, q_desired, q_now, qd_desired, qd_now, ...
-                              Kp, Kd, 3));
+               (alternatingControlFunc(t_now, q_desired, q_now, qd_desired, qd_now, ...
+                                       Kp, Kd, 3, ...
+                                       robot));
 
 % for fake robot
 % simple_coef = coef_file.simple_ff_coef;
