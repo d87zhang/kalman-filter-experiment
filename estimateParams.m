@@ -5,7 +5,7 @@ function [s_hat, H, residual, P_minus, P] = ...
     m = size(z, 2);
     n = length(s_hat_1);
 
-    R = diag(repmat(assumed_measurement_sigma^2, m, 1));
+    R = diag(assumed_measurement_sigma.^2);
 
     %% Estimation!
     % initialize and initial guesses

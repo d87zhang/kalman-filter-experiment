@@ -9,10 +9,12 @@ n = 3 * 10; % dimension of s
 m = 3; % dimension of z
 NUM_JOINTS = 6;
 
-% measurement_sigma = 10 * 1e0;
-measurement_sigma = 0;
+% measurement_sigma = 50 * 1e0;
+% measurement_sigma = 0;
+% measurement_sigma = [45 50 15];
+measurement_sigma = zeros(1, m);
 % assumed_measurement_sigma = measurement_sigma;
-assumed_measurement_sigma = measurement_sigma + 50;
+assumed_measurement_sigma = measurement_sigma + 200;
 
 % build robo
 robot_build_func = @buildPuma;
@@ -84,7 +86,10 @@ else
 end
 
 %% generate measurements
-z = torque(:,1:m) + normrnd(0, measurement_sigma, NUM_ITER, m);
+z = zeros(NUM_ITER, m);
+for idx = 1:m
+    z(:,idx) = torque(:,idx) + normrnd(0, measurement_sigma(idx), NUM_ITER, 1);
+end
 
 %% testing
 calculated_torque = zeros(NUM_ITER, size(torque, 2));
@@ -113,17 +118,17 @@ disp('Start estimating!');
 s_hat_1 = 1.5 * s_actual; % TODO try something more fun
 
 % method 1: scale Q according to initial guesses
-% Q_1 = 5 * diag(min(s_hat_1.^2, 0.1 * ones(size(s_hat_1))));
+Q_1 = 1 * diag(max(s_hat_1.^2, 0.1 * ones(size(s_hat_1))));
 
 % method 2: set Q to identity, but scale parts from experience...
-Q_1 = 1 * eye(n);
-% boost Q for mass parameters
-for link_idx = 1:n/10
-    idx = 10*(link_idx-1) + 1;
-    Q_1(idx, idx) = 1000;
-end
-% lower moment of inertia's Q parameters
-Q_1(25:30,:) = 0.01 * Q_1(25:30,:);
+% Q_1 = 1 * eye(n);
+% % boost Q for mass parameters
+% for link_idx = 1:n/10
+%     idx = 10*(link_idx-1) + 1;
+%     Q_1(idx, idx) = 1000;
+% end
+% % lower moment of inertia's Q parameters
+% Q_1(25:30,:) = 0.01 * Q_1(25:30,:);
 
 Q = repmat(Q_1, 1, 1, NUM_ITER);
 
@@ -272,6 +277,10 @@ saveas(gcf, strcat(folderName, '5-residual.jpg'));
 figure; hold on
 for idx = 1:NUM_JOINTS
     plot(t, torque(:,idx), 'DisplayName', sprintf('joint %d', idx));
+end
+
+for idx = 1:m
+    scatter(t, z(:,idx), 'DisplayName', sprintf('meas for joint %d', idx));
 end
 title('Torque vs. time');
 xlabel('Time(s)');
