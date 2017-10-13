@@ -43,9 +43,9 @@ function [s_hat, H, residual, P_minus, P] = ...
 %                    * inv(H(:,:,k)*P_minus(:,:,k)*H(:,:,k)' + V*R*V');
         K(:,:,k) = P_minus(:,:,k) * H(:,:,k)' ...
                    /(H(:,:,k)*P_minus(:,:,k)*H(:,:,k)' + V*R*V');
-        z_tilde_k = inverseDynamics(est_robot, q(k,:), qd(k,:), qdd(k,:));
+        z_tilde_k = est_robot.rne(q(k,:), qd(k,:), qdd(k,:));
         z_tilde_k = z_tilde_k(1:m);
-        residual(k,:) = z(k,:) - z_tilde_k';
+        residual(k,:) = z(k,:) - z_tilde_k;
         s_hat(k,:) = s_hat_minus(k,:) + ( K(:,:,k) * residual(k,:)' )';
         P(:,:,k) = (eye(n) - K(:,:,k) * H(:,:,k)) * P_minus(:,:,k);
         
@@ -56,14 +56,14 @@ function [s_hat, H, residual, P_minus, P] = ...
     function H = computeH(est_robot, s_hat_minus_k, q_now, qd_now, qdd_now)
         % Computes the Jacobian matrix H numerically
         % guarantees to return est_robot to its original state after call
-        baseTorque = inverseDynamics(est_robot, q_now, qd_now, qdd_now);
+        baseTorque = est_robot.rne(q_now, qd_now, qdd_now);
         
         H = zeros(m, n);
         % vary each state separately to calculate each column of H
         for s_idx = 1:n
             robot_set_param_func(est_robot, s_hat_minus_k(s_idx) + ds(s_idx), s_idx);
-            deviantTorque = inverseDynamics(est_robot, q_now, qd_now, qdd_now);
-            H(:, s_idx) = (deviantTorque(1:m) - baseTorque(1:m))./ds(s_idx);
+            deviantTorque = est_robot.rne(q_now, qd_now, qdd_now);
+            H(:, s_idx) = (deviantTorque(1:m) - baseTorque(1:m))'./ds(s_idx);
             
             % return est_robot to s_hat_minus_k
             robot_set_param_func(est_robot, s_hat_minus_k(s_idx), s_idx);

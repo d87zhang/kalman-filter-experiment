@@ -1,5 +1,4 @@
 %% initialize
-% global t_f NUM_ITER n m; % TODO get rid of these
 dt = 0.001;
 t_f = 5;
 NUM_ITER = t_f / dt + 1;
@@ -9,12 +8,10 @@ n = 3 * 10; % dimension of s
 m = 3; % dimension of z
 NUM_JOINTS = 6;
 
-% measurement_sigma = 50 * 1e0;
-% measurement_sigma = 0;
 % measurement_sigma = [45 50 15];
 measurement_sigma = zeros(1, m);
 % assumed_measurement_sigma = measurement_sigma;
-assumed_measurement_sigma = measurement_sigma + 200;
+assumed_measurement_sigma = measurement_sigma + 10;
 
 % build robo
 robot_build_func = @buildPuma;
@@ -46,14 +43,12 @@ robot = robot_build_func(s_actual);
 % this is so important :)
 [sf1_y, sf1_Fs] = audioread('soundeffects\militarycreation.wav');
 [sf2_y, sf2_Fs] = audioread('soundeffects\villagercreation.wav');
-[sf3_y, sf3_Fs] = audioread('soundeffects\academy.wav');
-[sf4_y, sf4_Fs] = audioread('soundeffects\barracks.wav');
 
-%% trajectory gen
+%% trajectory gen and simulate robot
 coef_file = matfile('coef.mat');
 coef = coef_file.ff_coef;
-t_offsets = [0.4, -0.8, 0.7, 0 0 0];
-[q_desired, qd_desired, qdd_desired] = genFFS(coef, t, t_offsets);
+t_offsets = [0.4, -0.8, 0.7, 1.2 0.3 -1.1];
+[q, qd, qdd] = genFFS(coef, t, t_offsets);
 
 % % hold trajectory still after a certain time
 % t_quintic_0 = 0.5;
@@ -77,39 +72,9 @@ t_offsets = [0.4, -0.8, 0.7, 0 0 0];
 % qd_desired(idx_hold_still:end, :) = zeros(size(qd_desired(idx_hold_still:end, :)));
 % qdd_desired(idx_hold_still:end, :) = zeros(size(qdd_desired(idx_hold_still:end, :)));
 
-%% simulate robot
-disp('Start simulating!');
-Kp = [150 240 120 0 0 0]'; % proportional gain
-Kd = [33 41 16 0 0 0]'; % differential gain
-controlFunc = @(t_now, q_desired, q_now, qd_desired, qd_now) ...
-               (alternatingControlFunc(t_now, q_desired, q_now, qd_desired, qd_now, ...
-                                       Kp, Kd, 3, ...
-                                       robot));
-
-% for fake robot
-% simple_coef = coef_file.simple_ff_coef;
-% control_out = genFFS(simple_coef, t, [0, 1, 2]);
-% controlFunc = @(t_now, q_desired, q_now, qd_desired, qd_now) ...
-%                (control_out(round(t_now/dt) + 1,:));
-
-tic
-[q, qd, qdd, torque] = simulateRobo(robot, controlFunc, q_desired, qd_desired, t);
-toc
-
-% simulate changing robot
-% s = repmat(s_actual, NUM_ITER, 1);
-% s(:,4) = linspace(s_actual(4), s_actual(4) + 3, NUM_ITER);
-% tic
-% [q, qd, qdd] = simulateChangingRobo(s, torque);
-% toc
-
-% torque = inverseDynamics(robot, q_now, qd_now, qdd_now); % TODO simulate using this
-
-disp('Done simulating \[T]/');
-if rand() > 0.5
-    sound(sf1_y, sf1_Fs);
-else
-    sound(sf2_y, sf2_Fs);
+torque = zeros(NUM_ITER, NUM_JOINTS);
+for k = 1:NUM_ITER
+    torque(k,:) = robot.rne(q(k,:), qd(k,:), qdd(k,:));
 end
 
 %% generate measurements
@@ -117,28 +82,6 @@ z = zeros(NUM_ITER, m);
 for idx = 1:m
     z(:,idx) = torque(:,idx) + normrnd(0, measurement_sigma(idx), NUM_ITER, 1);
 end
-
-%% testing
-calculated_torque = zeros(NUM_ITER, size(torque, 2));
-for k = 1:NUM_ITER
-    calculated_torque(k,:) = inverseDynamics(robot, q(k,:), qd(k,:), qdd(k,:));
-end
-norm(calculated_torque(:,1:m) - torque(:,1:m), 1)
-
-% % plot the f*cker
-% figure; hold on
-% for idx = 1:m
-%     plot(t, torque(:, idx), 'DisplayName', sprintf('true torque - %d', idx));
-%     plot(t, calculated_torque(:, idx), 'DisplayName', sprintf('calc torque - %d', idx));
-% end
-% legend('show');
-% 
-% figure; hold on
-% for idx = 1:m
-%     plot(t, calculated_torque(:, idx), 'DisplayName', sprintf('calc torque - %d', idx));
-% end
-% legend('show');
-% title('Just the calculated torques');
 
 %% estimate parameters
 disp('Start estimating!');
@@ -152,17 +95,17 @@ s_hat_1 = 1.5 * s_actual; % TODO try something more fun
 est_robot = robot_build_func(s_hat_1);
 
 % method 1: scale Q according to initial guesses
-% Q_1 = 1 * diag(max(s_hat_1.^2, 0.1 * ones(size(s_hat_1))));
+Q_1 = 1 * diag(max(s_hat_1.^2, 0.1 * ones(size(s_hat_1))));
 
 % method 2: set Q to identity, but scale parts from experience...
-Q_1 = 1 * eye(n);
-% boost Q for mass parameters
-for link_idx = 1:n/10
-    idx = 10*(link_idx-1) + 1;
-    Q_1(idx, idx) = 1000;
-end
-% lower moment of inertia's Q parameters
-Q_1(25:30,:) = 0.01 * Q_1(25:30,:);
+% Q_1 = 1 * eye(n);
+% % boost Q for mass parameters
+% for link_idx = 1:n/10
+%     idx = 10*(link_idx-1) + 1;
+%     Q_1(idx, idx) = 1000;
+% end
+% % lower moment of inertia's Q parameters
+% Q_1(25:30,:) = 0.01 * Q_1(25:30,:);
 
 Q = repmat(Q_1, 1, 1, NUM_ITER);
 
@@ -186,9 +129,9 @@ tic
 toc
 disp('Done estimating \[T]/');
 if rand() > 0.5
-    sound(sf3_y, sf1_Fs);
+    sound(sf1_y, sf1_Fs);
 else
-    sound(sf4_y, sf2_Fs);
+    sound(sf2_y, sf2_Fs);
 end
 
 %% Plot results!
@@ -238,9 +181,9 @@ for idx = 1:(n/10)
         hold off
     end
     
-    title(sprintf('link %d - first moment of mass est vs. time', idx));
+    title(sprintf('link %d - center of mass est vs. time', idx));
     xlabel('Time(s)');
-    ylabel('first moment(kg*m)');
+    ylabel('center of mass(m)');
     max_abs = max([abs(s_actual(base_idx+2:base_idx+4)); 0.1]);
     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
     legend('show');
