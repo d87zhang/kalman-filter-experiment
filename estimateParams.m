@@ -1,6 +1,7 @@
 function [s_hat, H, residual, P_minus, P] = ...
     estimateParams(z, assumed_measurement_sigma, Q, ...
-                   q, qd, qdd, s_hat_1, ds, robotBuildFunc)
+                   q, qd, qdd, s_hat_1, ds, ...
+                   est_robot, robot_set_param_func, robot_set_params_func)
     NUM_ITER = size(z, 1);
     m = size(z, 2);
     n = length(s_hat_1);
@@ -31,14 +32,18 @@ function [s_hat, H, residual, P_minus, P] = ...
         s_hat_minus(k, :) = s_hat(k-1, :); % dynamic parameters are not expected to change
         P_minus(:,:,k) = A*P(:,:,k-1)*A' + W*Q(:,:,k-1)*W';
 
+        robot_set_params_func(est_robot, s_hat_minus(k,:));
+
         % calculate non-constant Jacobian matrices numerically
-        H(:,:,k) = computeH(s_hat_minus(k, :), q(k,:), qd(k,:), qdd(k,:));
+        H(:,:,k) = computeH(est_robot, s_hat_minus(k, :), q(k,:), qd(k,:), qdd(k,:));
         
         % measurement update
 %         K(:,:,k) = P_minus(:,:,k) * (H(:,:,k)'\( H(:,:,k)*P_minus(:,:,k)*H(:,:,k)' + V*R*V' ));
+%         K(:,:,k) = P_minus(:,:,k) * H(:,:,k)' ...
+%                    * inv(H(:,:,k)*P_minus(:,:,k)*H(:,:,k)' + V*R*V');
         K(:,:,k) = P_minus(:,:,k) * H(:,:,k)' ...
-                   * inv(H(:,:,k)*P_minus(:,:,k)*H(:,:,k)' + V*R*V');
-        z_tilde_k = inverseDynamics(robotBuildFunc(s_hat_minus(k,:)), q(k,:), qd(k,:), qdd(k,:));
+                   /(H(:,:,k)*P_minus(:,:,k)*H(:,:,k)' + V*R*V');
+        z_tilde_k = inverseDynamics(est_robot, q(k,:), qd(k,:), qdd(k,:));
         z_tilde_k = z_tilde_k(1:m);
         residual(k,:) = z(k,:) - z_tilde_k';
         s_hat(k,:) = s_hat_minus(k,:) + ( K(:,:,k) * residual(k,:)' )';
@@ -48,19 +53,20 @@ function [s_hat, H, residual, P_minus, P] = ...
     end
     
     %% helper functions
-    function H = computeH(s_hat_minus_k, q_now, qd_now, qdd_now)
+    function H = computeH(est_robot, s_hat_minus_k, q_now, qd_now, qdd_now)
         % Computes the Jacobian matrix H numerically
-        baseRobo = robotBuildFunc(s_hat_minus_k);
-        baseTorque = inverseDynamics(baseRobo, q_now, qd_now, qdd_now);
+        % guarantees to return est_robot to its original state after call
+        baseTorque = inverseDynamics(est_robot, q_now, qd_now, qdd_now);
         
         H = zeros(m, n);
         % vary each state separately to calculate each column of H
         for s_idx = 1:n
-            s_deviant = s_hat_minus_k;
-            s_deviant(s_idx) = s_deviant(s_idx) + ds(s_idx);
-            deviantRobo = robotBuildFunc(s_deviant);
-            deviantTorque = inverseDynamics(deviantRobo, q_now, qd_now, qdd_now);
+            robot_set_param_func(est_robot, s_hat_minus_k(s_idx) + ds(s_idx), s_idx);
+            deviantTorque = inverseDynamics(est_robot, q_now, qd_now, qdd_now);
             H(:, s_idx) = (deviantTorque(1:m) - baseTorque(1:m))./ds(s_idx);
+            
+            % return est_robot to s_hat_minus_k
+            robot_set_param_func(est_robot, s_hat_minus_k(s_idx), s_idx);
         end
         
     end
