@@ -1,5 +1,5 @@
 function [s_hat, H, residual, P_minus, P] = ...
-    estimateParams(z, assumed_measurement_sigma, Q, ...
+    estimateParams(z, assumed_measurement_sigma, P_0, ...
                    q, qd, qdd, s_hat_1, ds, ...
                    est_robot, robot_set_param_func, robot_set_params_func)
     NUM_ITER = size(z, 1);
@@ -17,12 +17,13 @@ function [s_hat, H, residual, P_minus, P] = ...
     K = zeros(n, m, NUM_ITER);          % gain or blending factor
 
     s_hat(1, :) = s_hat_1;
-    P(:, :, 1) = eye(n, n);
+    P(:, :, 1) = P_0;
     
     % calculate Jacobian matrices that stay constant...
     A = eye(n);
     W = eye(n);
     V = eye(m);
+    Q = zeros(n, n);
     H = zeros(m, n, NUM_ITER);
     
     % for plotting purposes
@@ -30,7 +31,7 @@ function [s_hat, H, residual, P_minus, P] = ...
     for k = 2:NUM_ITER
         % time update
         s_hat_minus(k, :) = s_hat(k-1, :); % dynamic parameters are not expected to change
-        P_minus(:,:,k) = A*P(:,:,k-1)*A' + W*Q(:,:,k-1)*W';
+        P_minus(:,:,k) = A*P(:,:,k-1)*A' + W*Q*W';
 
         robot_set_params_func(est_robot, s_hat_minus(k,:));
 

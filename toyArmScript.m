@@ -8,10 +8,9 @@ n = 3 * 10; % dimension of s
 m = 3; % dimension of z
 NUM_JOINTS = 6;
 
-% measurement_sigma = [45 50 15];
+assumed_measurement_sigma = [10, 10, 3];
+% measurement_sigma = assumed_measurement_sigma;
 measurement_sigma = zeros(1, m);
-% assumed_measurement_sigma = measurement_sigma;
-assumed_measurement_sigma = measurement_sigma + 10;
 
 % build robo
 robot_build_func = @buildPuma;
@@ -30,9 +29,6 @@ s_actual(21:30) = [4.8, 0, -0.070, 0.014, ...
 %             17.4, 17.4*0.068, .539, ...
 %             4.8, 4.8*-0.070, .066];
 % s_actual = [0.35, 17.4, 4.8];
-
-MASS_MULTIPLIER = 1; % for making a heavy version of PUMA for better sim
-s_actual = MASS_MULTIPLIER * s_actual;
 
 % build robo (but it fake)
 % robot_build_func = @(s)(FakeRobo(s, NUM_JOINTS));
@@ -86,16 +82,20 @@ end
 %% estimate parameters
 disp('Start estimating!');
 
-% the whole thing should run < 1 min
-% set Q to be zero always. tune P_0 = diag()
-% monitor P.
-% norm of matrix - measure of how much it can expand a vector
+P_0 = zeros(1, n);
+s_hat_1 = s_actual;
 
-s_hat_1 = 1.5 * s_actual; % TODO try something more fun
+chosen_indices = [7,11,21]; % parameters being estimated
+for idx = chosen_indices
+    P_0(idx) = 1;
+    s_hat_1(idx) = 1.5 * s_hat_1(idx);
+end
+P_0 = diag(P_0);
+
 est_robot = robot_build_func(s_hat_1);
 
 % method 1: scale Q according to initial guesses
-Q_1 = 1 * diag(max(s_hat_1.^2, 0.1 * ones(size(s_hat_1))));
+% Q_1 = 1 * diag(max(s_hat_1.^2, 0.1 * ones(size(s_hat_1))));
 
 % method 2: set Q to identity, but scale parts from experience...
 % Q_1 = 1 * eye(n);
@@ -107,7 +107,7 @@ Q_1 = 1 * diag(max(s_hat_1.^2, 0.1 * ones(size(s_hat_1))));
 % % lower moment of inertia's Q parameters
 % Q_1(25:30,:) = 0.01 * Q_1(25:30,:);
 
-Q = repmat(Q_1, 1, 1, NUM_ITER);
+% Q = repmat(Q_1, 1, 1, NUM_ITER);
 
 % % Q anneals to zero (approaches zero) through exponential decay
 % decay_half_life = t_f/6;
@@ -118,12 +118,12 @@ Q = repmat(Q_1, 1, 1, NUM_ITER);
 % end
 
 % ds = small difference in states used for numerical differentiation
-ds = max(s_hat_1 * 0.01, 0.001*ones(size(s_hat_1)));
-% ds = 1e-2 * ones(n, 1); % TODO experiment with something small
+% ds = max(s_hat_1 * 0.01, 0.001*ones(size(s_hat_1)));
+ds = 1e-5 * ones(n, 1);
 
 tic
 [s_hat, H, residual, P_minus, P] = ...
-    estimateParams(z, assumed_measurement_sigma, Q, ...
+    estimateParams(z, assumed_measurement_sigma, P_0, ...
                    q, qd, qdd, s_hat_1, ds, ...
                    est_robot, robot_set_param_func, robot_set_params_func);
 toc
@@ -251,6 +251,21 @@ ylabel('Residual torque(N*m)');
 
 legend('show');
 saveas(gcf, strcat(folderName, '5-residual.jpg'));
+
+% Plot of P's norm
+figure;
+P_norm = zeros(1, NUM_ITER);
+for k = 1:NUM_ITER
+    P_norm(k) = norm(P(:,:,k));
+end
+
+plot(t, P_norm, 'DisplayName', 'Ps norm');
+
+title('Ps norm vs time');
+ylabel('Time(s)');
+ylabel('something..');
+
+legend('show')
 
 %% More plots
 % Plot of torques
