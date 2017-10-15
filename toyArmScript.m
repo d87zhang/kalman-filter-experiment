@@ -9,8 +9,8 @@ m = 3; % dimension of z
 NUM_JOINTS = 6;
 
 assumed_measurement_sigma = [10, 10, 3];
-% measurement_sigma = assumed_measurement_sigma;
-measurement_sigma = zeros(1, m);
+measurement_sigma = assumed_measurement_sigma;
+% measurement_sigma = zeros(1, m);
 
 % build robo
 robot_build_func = @buildPuma;
@@ -146,7 +146,8 @@ end
 
 figure;
 plot(t, H_cond, 'DisplayName', 'Hs condition num', 'color', 'r');
-title(sprintf('Hs condition number vs. time (meas sigma = %0.2e)', measurement_sigma));
+meas_sigma_str = strtrim(sprintf('%d ', measurement_sigma));
+title(sprintf('Hs condition number vs. time (meas sigma = %s )', meas_sigma_str));
 xlabel('Time(s)');
 ylabel('condition number');
 legend('show');
