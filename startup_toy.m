@@ -2,3 +2,4 @@
 addpath('fooling-code');
 addpath('control');
 addpath('util');
+addpath('robos');
