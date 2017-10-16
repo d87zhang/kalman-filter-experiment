@@ -126,7 +126,7 @@ for k = 1:NUM_ITER
     H_cond(k) = cond(H(:,:,k));
 end
 
-figure;
+figure('units','normalized','outerposition',[0 0 1 1]);
 plot(t, H_cond, 'DisplayName', 'Hs condition num', 'color', 'r');
 
 title('Hs condition number vs. time');
@@ -139,7 +139,7 @@ OFFSET_DESCRIPTION_MAP = containers.Map({2, 3, 4}, {'x', 'y', 'z'});
 
 for idx = 1:(n/10)
     base_idx = 10 * (idx-1);
-    figure;
+    figure('units','normalized','outerposition',[0 0 1 1]);
     % plot of mass estimates
     subplot(3, 1, 1);
     hold on
@@ -190,7 +190,7 @@ for idx = 1:(n/10)
 end
 
 % Plot of residual
-figure; hold on
+figure('units','normalized','outerposition',[0 0 1 1]); hold on
 for idx = 1:size(residual, 2)
     plot(t, residual(:,idx), 'DisplayName', sprintf('residual for torque %d', idx));
 end
@@ -203,7 +203,7 @@ legend('show');
 saveas(gcf, strcat(folderName, '5-residual.jpg'));
 
 % Plot of P's norm
-figure;
+figure('units','normalized','outerposition',[0 0 1 1]);
 P_norm = zeros(1, NUM_ITER);
 for k = 1:NUM_ITER
     P_norm(k) = norm(P(:,:,k));
@@ -229,7 +229,7 @@ dlmwrite(strcat(folderName, 'results.txt'), results, ' ');
 
 %% More plots
 % Plot of torques
-figure; hold on
+figure('units','normalized','outerposition',[0 0 1 1]); hold on
 for idx = 1:NUM_JOINTS
     plot(t, torque(:,idx), 'DisplayName', sprintf('joint %d', idx));
 end
@@ -245,7 +245,7 @@ legend('show');
 saveas(gcf, strcat(folderName, '7-torques.jpg'));
 
 %Plot of q's
-figure; hold on
+figure('units','normalized','outerposition',[0 0 1 1]); hold on
 for idx = 1:NUM_JOINTS
     plot(t, q(:,idx), 'DisplayName', sprintf('joint %d', idx));
 end
@@ -255,7 +255,7 @@ ylabel('Joint angle(rad)');
 legend('show');
 saveas(gcf, strcat(folderName, '8-q.jpg'));
 
-figure; hold on
+figure('units','normalized','outerposition',[0 0 1 1]); hold on
 for idx = 1:NUM_JOINTS
     plot(t, qd(:,idx), 'DisplayName', sprintf('joint %d', idx));
 end
@@ -265,7 +265,7 @@ ylabel('Joint velocity(rad/s)');
 legend('show');
 saveas(gcf, strcat(folderName, '9-qd.jpg'));
 
-figure; hold on
+figure('units','normalized','outerposition',[0 0 1 1]); hold on
 for idx = 1:NUM_JOINTS
     plot(t, qdd(:,idx), 'DisplayName', sprintf('joint %d', idx));
 end
