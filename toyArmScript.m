@@ -90,32 +90,14 @@ for idx = chosen_indices
     P_0(idx) = 1;
     s_hat_1(idx) = 1.5 * s_hat_1(idx);
 end
+
+% fine-tuning P_0...
+P_0(7) = 0.01 * P_0(7);
+P_0(11) = 5 * P_0(11);
+
 P_0 = diag(P_0);
 
 est_robot = robot_build_func(s_hat_1);
-
-% method 1: scale Q according to initial guesses
-% Q_1 = 1 * diag(max(s_hat_1.^2, 0.1 * ones(size(s_hat_1))));
-
-% method 2: set Q to identity, but scale parts from experience...
-% Q_1 = 1 * eye(n);
-% % boost Q for mass parameters
-% for link_idx = 1:n/10
-%     idx = 10*(link_idx-1) + 1;
-%     Q_1(idx, idx) = 1000;
-% end
-% % lower moment of inertia's Q parameters
-% Q_1(25:30,:) = 0.01 * Q_1(25:30,:);
-
-% Q = repmat(Q_1, 1, 1, NUM_ITER);
-
-% % Q anneals to zero (approaches zero) through exponential decay
-% decay_half_life = t_f/6;
-% alpha = -log(2) / decay_half_life;
-% decay_factors = exp(alpha * t);
-% for k = 1:NUM_ITER
-%     Q(:,:,k) = decay_factors(k) * Q(:,:,k);
-% end
 
 % ds = small difference in states used for numerical differentiation
 % ds = max(s_hat_1 * 0.01, 0.001*ones(size(s_hat_1)));
@@ -146,8 +128,8 @@ end
 
 figure;
 plot(t, H_cond, 'DisplayName', 'Hs condition num', 'color', 'r');
-meas_sigma_str = strtrim(sprintf('%d ', measurement_sigma));
-title(sprintf('Hs condition number vs. time (meas sigma = %s )', meas_sigma_str));
+
+title('Hs condition number vs. time');
 xlabel('Time(s)');
 ylabel('condition number');
 legend('show');
@@ -207,39 +189,6 @@ for idx = 1:(n/10)
     saveas(gcf, strcat(folderName, sprintf('%d-estimate joint %d.jpg', idx+1, idx)));
 end
 
-% for idx = 1:3
-%     figure
-% %     subplot(3, 1, 1); hold on
-%     hold on;
-%     plot([0, t_f], s_actual(1*(idx-1) + 1) * ones(1, 2), 'color', 'b');
-%     plot(t, s_hat(:,1*(idx-1) + 1), 'color', 'r');
-%     title(sprintf('link %d - something vs. time', idx));
-%     xlabel('Time(s)');
-%     ylabel('something(??)');
-%     max_abs = max([abs(s_actual(1*(idx-1) + 1)), 0.1]);
-%     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-%     
-%     saveas(gcf, strcat(folderName, sprintf('%d-estimate joint %d.jpg', idx+1, idx)));
-%     
-% %     subplot(3, 1, 2); hold on
-% %     plot([0, t_f], s_actual(3*(idx-1) + 2) * ones(1, 2), 'color', 'b');
-% %     plot(t, s_hat(:,3*(idx-1) + 2), 'color', 'r');
-% %     title(sprintf('link %d - first moment about x vs. time', idx));
-% %     xlabel('Time(s)');
-% %     ylabel('first moment(kg*m)');
-% %     max_abs = max([abs(s_actual(3*(idx-1) + 2)), 0.1]);
-% %     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-% %     
-% %     subplot(3, 1, 3); hold on
-% %     plot([0, t_f], s_actual(3*(idx-1) + 3) * ones(1, 2), 'color', 'b');
-% %     plot(t, s_hat(:,3*(idx-1) + 3), 'color', 'r');
-% %     title(sprintf('link %d - moment of inertia vs. time', idx));
-% %     xlabel('Time(s)');
-% %     ylabel('moment of inertia(kg*m^2)');
-% %     max_abs = max([abs(s_actual(3*(idx-1) + 3)), 0.1]);
-% %     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-% end
-
 % Plot of residual
 figure; hold on
 for idx = 1:size(residual, 2)
@@ -266,7 +215,17 @@ title('Ps norm vs time');
 ylabel('Time(s)');
 ylabel('something..');
 
-legend('show')
+legend('show');
+saveas(gcf, strcat(folderName, '6-P norm.jpg'));
+
+% Show final estimates
+results = zeros(length(chosen_indices), 5);
+for i = 1:length(chosen_indices)
+    idx = chosen_indices(i);
+    results(i,:) = [idx, P_0(idx, idx), s_actual(idx), s_hat(end,idx), ...
+                    100*(s_hat(end,idx) - s_actual(idx))/s_actual(idx)];
+end
+dlmwrite(strcat(folderName, 'results.txt'), results, ' ');
 
 %% More plots
 % Plot of torques
@@ -278,11 +237,12 @@ end
 for idx = 1:m
     scatter(t, z(:,idx), 'DisplayName', sprintf('meas for joint %d', idx));
 end
-title('Torque vs. time');
+meas_sigma_str = strtrim(sprintf('%d ', measurement_sigma));
+title(sprintf('Torque vs. time (meas sigma = %s)', meas_sigma_str));
 xlabel('Time(s)');
 ylabel('Torque(N*m)');
 legend('show');
-saveas(gcf, strcat(folderName, '6-torques.jpg'));
+saveas(gcf, strcat(folderName, '7-torques.jpg'));
 
 %Plot of q's
 figure; hold on
@@ -293,7 +253,7 @@ title('q vs. time');
 xlabel('Time(s)');
 ylabel('Joint angle(rad)');
 legend('show');
-saveas(gcf, strcat(folderName, '7-q.jpg'));
+saveas(gcf, strcat(folderName, '8-q.jpg'));
 
 figure; hold on
 for idx = 1:NUM_JOINTS
@@ -303,7 +263,7 @@ title('qd vs. time');
 xlabel('Time(s)');
 ylabel('Joint velocity(rad/s)');
 legend('show');
-saveas(gcf, strcat(folderName, '8-qd.jpg'));
+saveas(gcf, strcat(folderName, '9-qd.jpg'));
 
 figure; hold on
 for idx = 1:NUM_JOINTS
@@ -313,5 +273,5 @@ title('qdd vs. time');
 xlabel('Time(s)');
 ylabel('Joint angle(rad/s^2)');
 legend('show');
-saveas(gcf, strcat(folderName, '9-qdd.jpg'));
+saveas(gcf, strcat(folderName, '10-qdd.jpg'));
 
