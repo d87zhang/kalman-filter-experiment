@@ -44,6 +44,12 @@ robot = robot_build_func(s_actual);
 coef_file = matfile('coef.mat');
 coef = coef_file.ff_coef;
 t_offsets = [0.4, -0.8, 0.7, 1.2 0.3 -1.1];
+
+% coef = coef_file.ff_coef2;
+% t_offsets = [0.2, 1, -0.7, -1.2 0.9 0.4];
+
+% coef = coef_file.ff_coef3;
+% t_offsets = -1 * [0.2, 1, -0.7, -1.2 0.9 0.4];
 [q, qd, qdd] = genFFS(coef, t, t_offsets);
 
 % % hold trajectory still after a certain time
