@@ -85,15 +85,17 @@ disp('Start estimating!');
 P_0 = zeros(1, n);
 s_hat_1 = s_actual;
 
-chosen_indices = [7,11,21]; % parameters being estimated
+chosen_indices = [7,11,21,15:20]; % parameters being estimated
 for idx = chosen_indices
     P_0(idx) = 1;
     s_hat_1(idx) = 1.5 * s_hat_1(idx);
 end
 
 % fine-tuning P_0...
-P_0(7) = 0.01 * P_0(7);
-P_0(11) = 5 * P_0(11);
+P_0(7) = 0.05;
+P_0(11) = 15;
+P_0(15) = 0.1;
+P_0(16) = 0.1;
 
 P_0 = diag(P_0);
 
