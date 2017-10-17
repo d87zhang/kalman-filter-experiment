@@ -229,13 +229,19 @@ legend('show');
 saveas(gcf, strcat(folderName, '6-P norm.jpg'));
 
 % Show final estimates
-results = zeros(length(chosen_indices), 5);
+results = zeros(length(chosen_indices), 6);
 for i = 1:length(chosen_indices)
     idx = chosen_indices(i);
     results(i,:) = [idx, P_0(idx, idx), s_actual(idx), s_hat(end,idx), ...
+                    100*P(idx, idx, end)/P_0(idx, idx), ...
                     100*(s_hat(end,idx) - s_actual(idx))/s_actual(idx)];
 end
-dlmwrite(strcat(folderName, 'results.txt'), results, ' ');
+resultsFileName = strcat(folderName, 'results.txt');
+resultsFile = fopen(resultsFileName, 'w');
+fprintf(resultsFile, strcat('state id, P_0 value, actual value, final estimate, ', ...
+                            'final P value (as %% of P_0 val), %% error in final est\n'));
+fclose(resultsFile);
+dlmwrite(resultsFileName, results, '-append', 'delimiter', ' ');
 
 %% More plots
 % Plot of torques
