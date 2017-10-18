@@ -56,3 +56,9 @@ xlabel('Time(s)');
 ylabel('Residual torque(N*m)');
 
 legend('show');
+
+%% make trajectory flat at the beginning
+flat_ending_idx = 2.5/dt + 1;
+q(1:flat_ending_idx, :) = repmat(q(flat_ending_idx, :), flat_ending_idx, 1);
+qd(1:flat_ending_idx, :) = zeros(size(qd(1:flat_ending_idx, :)));
+qdd(1:flat_ending_idx, :) = zeros(size(qdd(1:flat_ending_idx, :)));

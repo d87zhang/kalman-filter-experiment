@@ -236,10 +236,10 @@ for i = 1:length(chosen_indices)
                     100*P(idx, idx, end)/P_0(idx, idx), ...
                     100*(s_hat(end,idx) - s_actual(idx))/s_actual(idx)];
 end
-resultsFileName = strcat(folderName, 'results.txt');
+resultsFileName = [folderName, 'results.txt'];
 resultsFile = fopen(resultsFileName, 'w');
-fprintf(resultsFile, strcat('state id, P_0 value, actual value, final estimate, ', ...
-                            'final P value (as %% of P_0 val), %% error in final est\n'));
+fprintf(resultsFile, ['state id, P_0 value, actual value, final estimate, ', ...
+                      'final P value (as %% of P_0 val), %% error in final est\n']);
 fclose(resultsFile);
 dlmwrite(resultsFileName, results, '-append', 'delimiter', ' ');
 
