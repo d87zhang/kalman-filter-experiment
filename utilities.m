@@ -2,19 +2,18 @@
 num_joints = 6;
 num_harmonics = 5;
 % these amplitudes will be fudged, so they are not the exact values
-% mean_amplitudes = 1 * [2.5, 1.8, 2.5, 2.5, 2.5, 2.5]';
-mean_amplitudes = 1 * [0, 0, 1.8, 0, 0, 0]';
-mean_offsets = [0, 0, 0.5, 0, 0, 0]';
+mean_amplitudes = 0.5 * [2.5, 1.8, 2.5, 2.5, 2.5, 2.5]';
+mean_offsets = [1, 1, 1, 0.5, 0.5, 0.5]';
 mean_offsets = ((rand(num_joints,1) > 0.5)*2 - 1) .* mean_offsets; % randomly flip signs
 
-ff_coef4 = zeros(num_joints, 2*num_harmonics + 1);
+ff_coef2 = zeros(num_joints, 2*num_harmonics + 1);
 % offsets
-ff_coef4(:,end) = normrnd(1, 0.15, num_joints, 1) .* mean_offsets;
+ff_coef2(:,end) = normrnd(1, 0.15, num_joints, 1) .* mean_offsets;
 % amplitudes
 mean_amplitudes = repmat(mean_amplitudes, 1, 2*num_harmonics);
-ff_coef4(:,1:end-1) = normrnd(1, 0.15, num_joints, 2*num_harmonics) .* mean_amplitudes;
+ff_coef2(:,1:end-1) = normrnd(1, 0.15, num_joints, 2*num_harmonics) .* mean_amplitudes;
 
-save('coef.mat', 'ff_coef4', '-append');
+save('coef.mat', 'ff_coef2', '-append');
 
 %% Generate simple FF torque coefficients
 num_joints = 3;

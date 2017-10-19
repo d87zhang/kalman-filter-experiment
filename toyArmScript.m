@@ -1,6 +1,6 @@
 %% initialize
-dt = 0.001;
-t_f = 5;
+dt = 0.005;
+t_f = 10;
 NUM_ITER = t_f / dt + 1;
 t = linspace(0, t_f, NUM_ITER)';
 n = 3 * 10; % dimension of s
@@ -8,7 +8,7 @@ n = 3 * 10; % dimension of s
 m = 3; % dimension of z
 NUM_JOINTS = 6;
 
-assumed_measurement_sigma = [10, 10, 3];
+assumed_measurement_sigma = 1 * [2, 3, 1.5];
 measurement_sigma = assumed_measurement_sigma;
 % measurement_sigma = zeros(1, m);
 
@@ -42,8 +42,8 @@ robot = robot_build_func(s_actual);
 
 %% trajectory gen and simulate robot
 coef_file = matfile('coef.mat');
-coef = coef_file.ff_coef;
-t_offsets = [0.4, -0.8, 0.7, 1.2 0.3 -1.1];
+coef = coef_file.ff_coef2;
+t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
 
 % coef = coef_file.ff_coef2;
 % t_offsets = [0.2, 1, -0.7, -1.2 0.9 0.4];
@@ -114,7 +114,7 @@ est_robot = robot_build_func(s_hat_1);
 ds = 1e-5 * ones(n, 1);
 
 tic
-[s_hat, H, residual, P_minus, P] = ...
+[s_hat, H, residual, K, P] = ...
     estimateParams(z, assumed_measurement_sigma, P_0, ...
                    q, qd, qdd, s_hat_1, ds, ...
                    est_robot, robot_set_param_func, robot_set_params_func);
