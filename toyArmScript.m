@@ -3,32 +3,30 @@ dt = 0.005;
 t_f = 10;
 NUM_ITER = t_f / dt + 1;
 t = linspace(0, t_f, NUM_ITER)';
-n = 3 * 10; % dimension of s
-% n = 3;
-m = 3; % dimension of z
-NUM_JOINTS = 6;
+% n = 3 * 10; % dimension of s
+n = 2;
+m = 1; % dimension of z
+NUM_JOINTS = 2;
 
-assumed_measurement_sigma = 1 * [2, 3, 1.5];
+% assumed_measurement_sigma = 1 * [2, 3, 1.5];
+% assumed_measurement_sigma = 1 * [6, 4];
+assumed_measurement_sigma = 1 * [6];
 measurement_sigma = assumed_measurement_sigma;
 % measurement_sigma = zeros(1, m);
 
 % build robo
-robot_build_func = @buildPuma;
-robot_set_params_func = @setPumaParams;
-robot_set_param_func = @setPumaParam;
+robot_build_func = @buildPlaneMan;
+robot_set_params_func = @setPlaneParams;
+robot_set_param_func = @setPlaneParam;
 % dynamic parameters
-s_actual = zeros(n, 1);
-s_actual(1:10) = [0, 0, 0, 0, 0   0   0.35    0   0   0];
-s_actual(11:20) = [17.4, 0.068, 0.006, -0.016, ...
-                  .13   .524    .539    0     0   0];
-s_actual(21:30) = [4.8, 0, -0.070, 0.014, ...
-                  .066    .0125   .066    0   0   0];
-% here s contains 3 elements for each link: m, first moment about x, moment
-% of inertia about z (zz)
-% s_actual = [0, 0, 0.35, ...
-%             17.4, 17.4*0.068, .539, ...
-%             4.8, 4.8*-0.070, .066];
-% s_actual = [0.35, 17.4, 4.8];
+% s_actual = zeros(n, 1);
+% s_actual(1:10) = [0, 0, 0, 0, 0   0   0.35    0   0   0];
+% s_actual(11:20) = [17.4, 0.068, 0.006, -0.016, ...
+%                   .13   .524    .539    0     0   0];
+% s_actual(21:30) = [4.8, 0, -0.070, 0.014, ...
+%                   .066    .0125   .066    0   0   0];
+
+s_actual = [1.5, 2];
 
 % build robo (but it fake)
 % robot_build_func = @(s)(FakeRobo(s, NUM_JOINTS));
@@ -42,7 +40,8 @@ robot = robot_build_func(s_actual);
 
 %% trajectory gen and simulate robot
 coef_file = matfile('coef.mat');
-coef = coef_file.ff_coef2;
+% coef = coef_file.ff_coef2;
+coef = coef_file.ff_coef_plane;
 t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
 
 % coef = coef_file.ff_coef2;
@@ -51,6 +50,9 @@ t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
 % coef = coef_file.ff_coef3;
 % t_offsets = -1 * [0.2, 1, -0.7, -1.2 0.9 0.4];
 [q, qd, qdd] = genFFS(coef, t, t_offsets);
+% q = zeros(NUM_ITER, NUM_JOINTS);
+% qd = q;
+% qdd = q;
 
 % % hold trajectory still after a certain time
 % t_quintic_0 = 0.5;
@@ -76,7 +78,7 @@ t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
 
 torque = zeros(NUM_ITER, NUM_JOINTS);
 for k = 1:NUM_ITER
-    torque(k,:) = robot.rne(q(k,:), qd(k,:), qdd(k,:));
+    torque(k,:) = robot.rne(q(k,:), qd(k,:), qdd(k,:), robot.gravity);
 end
 
 %% generate measurements
@@ -91,19 +93,20 @@ disp('Start estimating!');
 P_0 = zeros(1, n);
 s_hat_1 = s_actual;
 
-chosen_indices = [7,11,21,15:20,25:30]; % parameters being estimated
+% chosen_indices = [7,11,21,15:20,25:30]; % parameters being estimated
+chosen_indices = [1, 2]; % parameters being estimated
 for idx = chosen_indices
     P_0(idx) = 1;
     s_hat_1(idx) = 1.5 * s_hat_1(idx);
 end
 
 % fine-tuning P_0...
-P_0(7) = 0.2;
-P_0(11) = 15;
-P_0(15) = 0.3;
-P_0(16) = 0.3;
-P_0(25) = 0.03;
-P_0(26) = 3;
+% P_0(7) = 0.2;
+% P_0(11) = 15;
+% P_0(15) = 0.3;
+% P_0(16) = 0.3;
+% P_0(25) = 0.03;
+% P_0(26) = 3;
 
 P_0 = diag(P_0);
 
@@ -147,57 +150,70 @@ saveas(gcf, strcat(folderName, '1-H condition number.jpg'));
 
 OFFSET_DESCRIPTION_MAP = containers.Map({2, 3, 4}, {'x', 'y', 'z'});
 
-for idx = 1:(n/10)
-    base_idx = 10 * (idx-1);
-    figure('units','normalized','outerposition',[0 0 1 1]);
-    % plot of mass estimates
-    subplot(3, 1, 1);
-    hold on
-    plot([0, t_f], s_actual(base_idx + 1) * ones(1, 2), 'color', 'b');
-    plot(t, s_hat(:,base_idx + 1), 'color', 'r');
-    hold off
-    
-    title(sprintf('link %d - mass est vs. time', idx));
-    xlabel('Time(s)');
-    ylabel('mass(kg)');
-    max_abs = max([abs(s_actual(base_idx + 1)); 0.1]);
-    ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-    
-    % plot of first moment estimates
-    subplot(3, 1, 2);
-    for offset_idx = 2:4
-        hold on
-        plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), ...
-            'DisplayName', sprintf('true moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
-        plot(t, s_hat(:,base_idx + offset_idx), ...
-            'DisplayName', sprintf('est moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
-        hold off
-    end
-    
-    title(sprintf('link %d - center of mass est vs. time', idx));
-    xlabel('Time(s)');
-    ylabel('center of mass(m)');
-    max_abs = max([abs(s_actual(base_idx+2:base_idx+4)); 0.1]);
-    ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-    legend('show');
-    
-    % plot of moment of inertia estimates
-    subplot(3, 1, 3);
-    for offset_idx = 5:10
-        hold on
-        plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), 'color', 'b');
-        plot(t, s_hat(:,base_idx + offset_idx), 'color', 'r');
-        hold off
-    end
-    
-    title(sprintf('link %d - moment of inertia est vs. time', idx));
-    xlabel('Time(s)');
-    ylabel('Moment of inertia(kg*m^2)');
-    max_abs = max([abs(s_actual(base_idx+5:base_idx+10)); 0.1]);
-    ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-    
-    saveas(gcf, strcat(folderName, sprintf('%d-estimate joint %d.jpg', idx+1, idx)));
-end
+% for idx = 1:(n/10)
+%     base_idx = 10 * (idx-1);
+%     figure('units','normalized','outerposition',[0 0 1 1]);
+%     % plot of mass estimates
+%     subplot(3, 1, 1);
+%     hold on
+%     plot([0, t_f], s_actual(base_idx + 1) * ones(1, 2), 'color', 'b');
+%     plot(t, s_hat(:,base_idx + 1), 'color', 'r');
+%     hold off
+%     
+%     title(sprintf('link %d - mass est vs. time', idx));
+%     xlabel('Time(s)');
+%     ylabel('mass(kg)');
+%     max_abs = max([abs(s_actual(base_idx + 1)); 0.1]);
+%     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+%     
+%     % plot of first moment estimates
+%     subplot(3, 1, 2);
+%     for offset_idx = 2:4
+%         hold on
+%         plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), ...
+%             'DisplayName', sprintf('true moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
+%         plot(t, s_hat(:,base_idx + offset_idx), ...
+%             'DisplayName', sprintf('est moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
+%         hold off
+%     end
+%     
+%     title(sprintf('link %d - center of mass est vs. time', idx));
+%     xlabel('Time(s)');
+%     ylabel('center of mass(m)');
+%     max_abs = max([abs(s_actual(base_idx+2:base_idx+4)); 0.1]);
+%     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+%     legend('show');
+%     
+%     % plot of moment of inertia estimates
+%     subplot(3, 1, 3);
+%     for offset_idx = 5:10
+%         hold on
+%         plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), 'color', 'b');
+%         plot(t, s_hat(:,base_idx + offset_idx), 'color', 'r');
+%         hold off
+%     end
+%     
+%     title(sprintf('link %d - moment of inertia est vs. time', idx));
+%     xlabel('Time(s)');
+%     ylabel('Moment of inertia(kg*m^2)');
+%     max_abs = max([abs(s_actual(base_idx+5:base_idx+10)); 0.1]);
+%     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+%     
+%     saveas(gcf, strcat(folderName, sprintf('%d-estimate joint %d.jpg', idx+1, idx)));
+% end
+
+figure('units','normalized','outerposition',[0 0 1 1]); hold on
+plot([0, t_f], s_actual(1) * ones(1, 2), 'DisplayName', 'true mass 1');
+plot([0, t_f], s_actual(2) * ones(1, 2), 'DisplayName', 'true mass 2');
+plot(t, s_hat(:,1), 'DisplayName', 'est mass 1');
+plot(t, s_hat(:,2), 'DisplayName', 'est mass 2');
+
+title('Estimates vs. time');
+xlabel('Time(s)');
+ylabel('Mass(kg)');
+
+legend('show');
+saveas(gcf, strcat(folderName, '2-estimates.jpg'));
 
 % Plot of residual
 figure('units','normalized','outerposition',[0 0 1 1]); hold on
