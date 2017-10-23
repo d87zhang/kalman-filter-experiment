@@ -3,30 +3,30 @@ dt = 0.005;
 t_f = 10;
 NUM_ITER = t_f / dt + 1;
 t = linspace(0, t_f, NUM_ITER)';
-% n = 3 * 10; % dimension of s
-n = 2;
-m = 1; % dimension of z
-NUM_JOINTS = 2;
+n = 3 * 10; % dimension of s
+% n = 2;
+m = 3; % dimension of z
+NUM_JOINTS = 6;
 
-% assumed_measurement_sigma = 1 * [2, 3, 1.5];
+assumed_measurement_sigma = 1 * [2, 3, 1.5];
 % assumed_measurement_sigma = 1 * [6, 4];
-assumed_measurement_sigma = 1 * [6];
+% assumed_measurement_sigma = 1 * [6];
 measurement_sigma = assumed_measurement_sigma;
 % measurement_sigma = zeros(1, m);
 
 % build robo
-robot_build_func = @buildPlaneMan;
-robot_set_params_func = @setPlaneParams;
-robot_set_param_func = @setPlaneParam;
+robot_build_func = @buildPuma;
+robot_set_params_func = @setPumaParams;
+robot_set_param_func = @setPumaParam;
 % dynamic parameters
-% s_actual = zeros(n, 1);
-% s_actual(1:10) = [0, 0, 0, 0, 0   0   0.35    0   0   0];
-% s_actual(11:20) = [17.4, 0.068, 0.006, -0.016, ...
-%                   .13   .524    .539    0     0   0];
-% s_actual(21:30) = [4.8, 0, -0.070, 0.014, ...
-%                   .066    .0125   .066    0   0   0];
+s_actual = zeros(n, 1);
+s_actual(1:10) = [0, 0, 0, 0, 0   0   0.35    0   0   0];
+s_actual(11:20) = [17.4, 0.068, 0.006, -0.016, ...
+                  .13   .524    .539    0     0   0];
+s_actual(21:30) = [4.8, 0, -0.070, 0.014, ...
+                  .066    .0125   .066    0   0   0];
 
-s_actual = [1.5, 2];
+% s_actual = [1.5, 2];
 
 % build robo (but it fake)
 % robot_build_func = @(s)(FakeRobo(s, NUM_JOINTS));
@@ -40,8 +40,8 @@ robot = robot_build_func(s_actual);
 
 %% trajectory gen and simulate robot
 coef_file = matfile('coef.mat');
-% coef = coef_file.ff_coef2;
-coef = coef_file.ff_coef_plane;
+coef = coef_file.ff_coef2;
+% coef = coef_file.ff_coef_plane;
 t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
 
 % coef = coef_file.ff_coef2;
@@ -93,11 +93,21 @@ disp('Start estimating!');
 P_0 = zeros(1, n);
 s_hat_1 = s_actual;
 
-% chosen_indices = [7,11,21,15:20,25:30]; % parameters being estimated
-chosen_indices = [1, 2]; % parameters being estimated
+chosen_indices = [7,11,21,15:20,25:30]; % parameters being estimated
+guess_factors = containers.Map(chosen_indices, 1.5 * ones(size(chosen_indices)));
+guess_factors(7) = 2;
+
 for idx = chosen_indices
-    P_0(idx) = 1;
-    s_hat_1(idx) = 1.5 * s_hat_1(idx);
+%     P_0(idx) = 1;
+    s_hat_1(idx) = guess_factors(idx) * s_hat_1(idx);
+    
+    % auto tuning
+    error_in_guess = s_hat_1(idx) - s_actual(idx);
+    if error_in_guess == 0 
+        P_0(idx) = 1;
+    else
+        P_0(idx) = error_in_guess^2;
+    end
 end
 
 % fine-tuning P_0...
@@ -150,70 +160,71 @@ saveas(gcf, strcat(folderName, '1-H condition number.jpg'));
 
 OFFSET_DESCRIPTION_MAP = containers.Map({2, 3, 4}, {'x', 'y', 'z'});
 
-% for idx = 1:(n/10)
-%     base_idx = 10 * (idx-1);
-%     figure('units','normalized','outerposition',[0 0 1 1]);
-%     % plot of mass estimates
-%     subplot(3, 1, 1);
-%     hold on
-%     plot([0, t_f], s_actual(base_idx + 1) * ones(1, 2), 'color', 'b');
-%     plot(t, s_hat(:,base_idx + 1), 'color', 'r');
-%     hold off
-%     
-%     title(sprintf('link %d - mass est vs. time', idx));
-%     xlabel('Time(s)');
-%     ylabel('mass(kg)');
-%     max_abs = max([abs(s_actual(base_idx + 1)); 0.1]);
-%     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-%     
-%     % plot of first moment estimates
-%     subplot(3, 1, 2);
-%     for offset_idx = 2:4
-%         hold on
-%         plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), ...
-%             'DisplayName', sprintf('true moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
-%         plot(t, s_hat(:,base_idx + offset_idx), ...
-%             'DisplayName', sprintf('est moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
-%         hold off
-%     end
-%     
-%     title(sprintf('link %d - center of mass est vs. time', idx));
-%     xlabel('Time(s)');
-%     ylabel('center of mass(m)');
-%     max_abs = max([abs(s_actual(base_idx+2:base_idx+4)); 0.1]);
-%     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-%     legend('show');
-%     
-%     % plot of moment of inertia estimates
-%     subplot(3, 1, 3);
-%     for offset_idx = 5:10
-%         hold on
-%         plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), 'color', 'b');
-%         plot(t, s_hat(:,base_idx + offset_idx), 'color', 'r');
-%         hold off
-%     end
-%     
-%     title(sprintf('link %d - moment of inertia est vs. time', idx));
-%     xlabel('Time(s)');
-%     ylabel('Moment of inertia(kg*m^2)');
-%     max_abs = max([abs(s_actual(base_idx+5:base_idx+10)); 0.1]);
-%     ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-%     
-%     saveas(gcf, strcat(folderName, sprintf('%d-estimate joint %d.jpg', idx+1, idx)));
-% end
+for idx = 1:(n/10)
+    base_idx = 10 * (idx-1);
+    figure('units','normalized','outerposition',[0 0 1 1]);
+    % plot of mass estimates
+    subplot(3, 1, 1);
+    hold on
+    plot([0, t_f], s_actual(base_idx + 1) * ones(1, 2), 'color', 'b');
+    plot(t, s_hat(:,base_idx + 1), 'color', 'r');
+    hold off
+    
+    title(sprintf('link %d - mass est vs. time', idx));
+    xlabel('Time(s)');
+    ylabel('mass(kg)');
+    max_abs = max([abs(s_actual(base_idx + 1)); 0.1]);
+    ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+    
+    % plot of first moment estimates
+    subplot(3, 1, 2);
+    for offset_idx = 2:4
+        hold on
+        plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), ...
+            'DisplayName', sprintf('true moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
+        plot(t, s_hat(:,base_idx + offset_idx), ...
+            'DisplayName', sprintf('est moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
+        hold off
+    end
+    
+    title(sprintf('link %d - center of mass est vs. time', idx));
+    xlabel('Time(s)');
+    ylabel('center of mass(m)');
+    max_abs = max([abs(s_actual(base_idx+2:base_idx+4)); 0.1]);
+    ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+    legend('show');
+    
+    % plot of moment of inertia estimates
+    subplot(3, 1, 3);
+    for offset_idx = 5:10
+        hold on
+        plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), 'color', 'b');
+        plot(t, s_hat(:,base_idx + offset_idx), 'color', 'r');
+        hold off
+    end
+    
+    title(sprintf('link %d - moment of inertia est vs. time', idx));
+    xlabel('Time(s)');
+    ylabel('Moment of inertia(kg*m^2)');
+    max_abs = max([abs(s_actual(base_idx+5:base_idx+10)); 0.1]);
+    ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+    
+    saveas(gcf, strcat(folderName, sprintf('%d-estimate joint %d.jpg', idx+1, idx)));
+end
 
-figure('units','normalized','outerposition',[0 0 1 1]); hold on
-plot([0, t_f], s_actual(1) * ones(1, 2), 'DisplayName', 'true mass 1');
-plot([0, t_f], s_actual(2) * ones(1, 2), 'DisplayName', 'true mass 2');
-plot(t, s_hat(:,1), 'DisplayName', 'est mass 1');
-plot(t, s_hat(:,2), 'DisplayName', 'est mass 2');
-
-title('Estimates vs. time');
-xlabel('Time(s)');
-ylabel('Mass(kg)');
-
-legend('show');
-saveas(gcf, strcat(folderName, '2-estimates.jpg'));
+% for 2 DoF Plane Man
+% figure('units','normalized','outerposition',[0 0 1 1]); hold on
+% plot([0, t_f], s_actual(1) * ones(1, 2), 'DisplayName', 'true mass 1');
+% plot([0, t_f], s_actual(2) * ones(1, 2), 'DisplayName', 'true mass 2');
+% plot(t, s_hat(:,1), 'DisplayName', 'est mass 1');
+% plot(t, s_hat(:,2), 'DisplayName', 'est mass 2');
+% 
+% title('Estimates vs. time');
+% xlabel('Time(s)');
+% ylabel('Mass(kg)');
+% 
+% legend('show');
+% saveas(gcf, strcat(folderName, '2-estimates.jpg'));
 
 % Plot of residual
 figure('units','normalized','outerposition',[0 0 1 1]); hold on
@@ -252,12 +263,24 @@ for i = 1:length(chosen_indices)
                     100*P(idx, idx, end)/P_0(idx, idx), ...
                     100*(s_hat(end,idx) - s_actual(idx))/s_actual(idx)];
 end
+additional_info = zeros(length(chosen_indices), 2);
+additional_info(:,1) = results(:,1);
+for i = 1:size(additional_info, 1)
+    additional_info(i,2) = guess_factors(additional_info(i,1));
+end
+
 resultsFileName = [folderName, 'results.txt'];
 resultsFile = fopen(resultsFileName, 'w');
 fprintf(resultsFile, ['state id, P_0 value, actual value, final estimate, ', ...
                       'final P value (as %% of P_0 val), %% error in final est\n']);
 fclose(resultsFile);
 dlmwrite(resultsFileName, results, '-append', 'delimiter', ' ');
+
+resultsFile = fopen(resultsFileName, 'a');
+fprintf(resultsFile, '\n');
+fprintf(resultsFile, 'state id, initial guess factor\n');
+fclose(resultsFile);
+dlmwrite(resultsFileName, additional_info, '-append', 'delimiter', ' ');
 
 %% More plots
 % Plot of torques
