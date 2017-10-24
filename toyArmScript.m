@@ -1,6 +1,6 @@
 %% initialize
 dt = 0.005;
-t_f = 10;
+t_f = 20;
 NUM_ITER = t_f / dt + 1;
 t = linspace(0, t_f, NUM_ITER)';
 n = 3 * 10; % dimension of s
@@ -95,28 +95,29 @@ s_hat_1 = s_actual;
 
 chosen_indices = [7,11,21,15:20,25:30]; % parameters being estimated
 guess_factors = containers.Map(chosen_indices, 1.5 * ones(size(chosen_indices)));
-guess_factors(7) = 2;
+% guess_factors(15) = 1.5 * 1.5;
 
 for idx = chosen_indices
-%     P_0(idx) = 1;
+    P_0(idx) = 1;
     s_hat_1(idx) = guess_factors(idx) * s_hat_1(idx);
-    
+
     % auto tuning
-    error_in_guess = s_hat_1(idx) - s_actual(idx);
-    if error_in_guess == 0 
-        P_0(idx) = 1;
-    else
-        P_0(idx) = error_in_guess^2;
-    end
+%     error_in_guess = s_hat_1(idx) - s_actual(idx);
+%     if error_in_guess == 0 
+%         P_0(idx) = 1;
+%     else
+%         P_0(idx) = error_in_guess^2;
+%     end
 end
 
-% fine-tuning P_0...
-% P_0(7) = 0.2;
-% P_0(11) = 15;
-% P_0(15) = 0.3;
-% P_0(16) = 0.3;
-% P_0(25) = 0.03;
-% P_0(26) = 3;
+% fine tuning P_0...
+P_0(7) = 0.16;
+P_0(11) = 15;
+P_0(15) = 0.3;
+P_0(16) = 0.3;
+P_0(25) = 0.03 * 10;
+P_0(26) = 0.03 * 10;
+P_0(27) = 0.01;
 
 P_0 = diag(P_0);
 
@@ -141,7 +142,7 @@ end
 
 %% Plot results!
 folderName = 'C:\Users\Difei\Desktop\toyArm pics\currPlots\';
-YLIM_FACTOR = 2;
+YLIM_FACTOR = 3;
 
 % Plot of H's condition number
 H_cond = zeros(NUM_ITER, 1);
