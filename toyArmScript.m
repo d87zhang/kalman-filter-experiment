@@ -1,6 +1,6 @@
 %% initialize
 dt = 0.005;
-t_f = 20;
+t_f = 10;
 NUM_ITER = t_f / dt + 1;
 t = linspace(0, t_f, NUM_ITER)';
 n = 3 * 10; % dimension of s
@@ -15,17 +15,24 @@ measurement_sigma = assumed_measurement_sigma;
 % measurement_sigma = zeros(1, m);
 
 % build robo
-robot_build_func = @buildPuma;
+robot_build_func = @buildPumaDH;
 robot_set_params_func = @setPumaParams;
 robot_set_param_func = @setPumaParam;
 % dynamic parameters
 s_actual = zeros(n, 1);
-s_actual(1:10) = [0, 0, 0, 0, 0   0   0.35    0   0   0];
-s_actual(11:20) = [17.4, 0.068, 0.006, -0.016, ...
-                  .13   .524    .539    0     0   0];
-s_actual(21:30) = [4.8, 0, -0.070, 0.014, ...
-                  .066    .0125   .066    0   0   0];
-
+% for modified DH convention Puma
+% s_actual(1:10) = [0, 0, 0, 0, 0   0   0.35    0   0   0];
+% s_actual(11:20) = [17.4, 0.068, 0.006, -0.016, ...
+%                   .13   .524    .539    0     0   0];
+% s_actual(21:30) = [4.8, 0, -0.070, 0.014, ...
+%                   .066    .0125   .066    0   0   0];
+% for DH convention Puma
+s_actual(1:10) = [0, 0, 0, 0, 0   0.35   0   0   0   0];
+s_actual(11:20) = [17.4, -0.3638, 0.006, 0.2275, ...
+                  0.13, 0.524, 0.539, 0, 0, 0];
+s_actual(21:30) = [4.8, -0.0203, -0.0141, 0.070, ...
+                  0.066, 0.086, 0.0125, 0, 0, 0];
+              
 % s_actual = [1.5, 2];
 
 % build robo (but it fake)
@@ -76,10 +83,17 @@ t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
 % qd_desired(idx_hold_still:end, :) = zeros(size(qd_desired(idx_hold_still:end, :)));
 % qdd_desired(idx_hold_still:end, :) = zeros(size(qdd_desired(idx_hold_still:end, :)));
 
-torque = zeros(NUM_ITER, NUM_JOINTS);
-for k = 1:NUM_ITER
-    torque(k,:) = robot.rne(q(k,:), qd(k,:), qdd(k,:), robot.gravity);
-end
+
+torque = robot.rne([q, qd, qdd], robot.gravity, zeros(1,6));
+% [torque, base_wrench] = robot.rne([q, qd, qdd], robot.gravity, zeros(1,6));
+
+% torque = zeros(NUM_ITER, NUM_JOINTS);
+% for k = 1:NUM_ITER
+%     [temp_torque, base_wrench] = robot.rne([q(k,:), qd(k,:), qdd(k,:)], ...
+%                                            robot.gravity, ...
+%                                            zeros(1,6));
+%     torque(k,:) = temp_torque;
+% end
 
 %% generate measurements
 z = zeros(NUM_ITER, m);
@@ -93,7 +107,7 @@ disp('Start estimating!');
 P_0 = zeros(1, n);
 s_hat_1 = s_actual;
 
-chosen_indices = [7,11,21,15:20,25:30]; % parameters being estimated
+chosen_indices = [6,11,21,15:20,25:30]; % parameters being estimated
 guess_factors = containers.Map(chosen_indices, 1.5 * ones(size(chosen_indices)));
 % guess_factors(15) = 1.5 * 1.5;
 
@@ -111,12 +125,12 @@ for idx = chosen_indices
 end
 
 % fine tuning P_0...
-P_0(7) = 0.16;
+P_0(6) = 0.16;
 P_0(11) = 15;
 P_0(15) = 0.3;
 P_0(16) = 0.3;
-P_0(25) = 0.03 * 10;
-P_0(26) = 0.03 * 10;
+P_0(25) = 0.03;
+P_0(26) = 0.03;
 P_0(27) = 0.01;
 
 P_0 = diag(P_0);
