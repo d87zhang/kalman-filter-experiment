@@ -272,8 +272,11 @@ saveas(gcf, strcat(folderName, '6-P norm.jpg'));
 
 % Show final estimates
 results = zeros(length(chosen_indices), 6);
+init_guesses = strings(length(chosen_indices), 1);
 for i = 1:length(chosen_indices)
     idx = chosen_indices(i);
+    init_guesses(i) = string(sprintf('%0.3f (%0.3f)', ...
+                                     s_hat_1(i), s_hat_1(i)/s_actual(i)));
     results(i,:) = [idx, P_0(idx, idx), s_actual(idx), s_hat(end,idx), ...
                     100*P(idx, idx, end)/P_0(idx, idx), ...
                     100*(s_hat(end,idx) - s_actual(idx))/s_actual(idx)];
@@ -284,18 +287,19 @@ for i = 1:size(additional_info, 1)
     additional_info(i,2) = guess_factors(additional_info(i,1));
 end
 
+resultsTable1 = table(results(:,1), results(:,2), results(:,3), ...
+    init_guesses, results(:,4), results(:,5), results(:,6));
+resultsTable1.Properties.VariableNames = {'stateId', 'P_0_val', ...
+    'actualValue', 'initGuess_factor', 'finalEst', 'final_P_val_as_perc_of_P_0', ...
+    'perc_err_final_est'};
+resultsTable1Str = evalc('disp(resultsTable1)');
+% get rid of silly formatting stuff in the string..
+resultsTable1Str = regexprep(resultsTable1Str, '(</strong>|<strong>)', '');
+
 resultsFileName = [folderName, 'results.txt'];
 resultsFile = fopen(resultsFileName, 'w');
-fprintf(resultsFile, ['state id, P_0 value, actual value, final estimate, ', ...
-                      'final P value (as %% of P_0 val), %% error in final est\n']);
+fprintf(resultsFile, resultsTable1Str);
 fclose(resultsFile);
-dlmwrite(resultsFileName, results, '-append', 'delimiter', ' ');
-
-resultsFile = fopen(resultsFileName, 'a');
-fprintf(resultsFile, '\n');
-fprintf(resultsFile, 'state id, initial guess factor\n');
-fclose(resultsFile);
-dlmwrite(resultsFileName, additional_info, '-append', 'delimiter', ' ');
 
 %% More plots
 % Plot of torques
