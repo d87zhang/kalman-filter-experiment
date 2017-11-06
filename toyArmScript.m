@@ -48,6 +48,7 @@ robot = robot_build_func(s_actual);
 %% trajectory gen and simulate robot
 coef_file = matfile('coef.mat');
 coef = coef_file.ff_coef2;
+fund_periods = [6     4     5     7     3     8];
 % coef = coef_file.ff_coef_plane;
 t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
 
@@ -56,7 +57,7 @@ t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
 
 % coef = coef_file.ff_coef3;
 % t_offsets = -1 * [0.2, 1, -0.7, -1.2 0.9 0.4];
-[q, qd, qdd] = genFFS(coef, t, t_offsets);
+[q, qd, qdd] = genFFS(coef, t, fund_periods, t_offsets);
 % q = zeros(NUM_ITER, NUM_JOINTS);
 % qd = q;
 % qdd = q;
