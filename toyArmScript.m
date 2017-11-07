@@ -271,16 +271,25 @@ ylabel('something..');
 legend('show');
 saveas(gcf, strcat(folderName, '6-P norm.jpg'));
 
-% Show final estimates
-results = zeros(length(chosen_indices), 6);
+% Save textual results
+results = zeros(length(chosen_indices), 7);
 init_guesses = strings(length(chosen_indices), 1);
+final_perc_errs = zeros(1, length(chosen_indices));
+mean_abs_rel_err = zeros(1, length(chosen_indices));
 for i = 1:length(chosen_indices)
     idx = chosen_indices(i);
     init_guesses(i) = string(sprintf('%0.3f (%0.3f)', ...
                                      s_hat_1(idx), s_hat_1(idx)/s_actual(idx)));
+    
+    diff = s_hat(:,idx) - s_actual(idx) * ones(size(s_hat(:,idx)));
+    normalized_integral = sum(abs(diff)) / s_actual(idx);
+    mean_abs_rel_err(i) = normalized_integral / NUM_ITER;
+    final_perc_errs(i) = 100*(s_hat(end,idx) - s_actual(idx))/s_actual(idx);
+                                    
     results(i,:) = [idx, P_0(idx, idx), s_actual(idx), s_hat(end,idx), ...
                     100*P(idx, idx, end)/P_0(idx, idx), ...
-                    100*(s_hat(end,idx) - s_actual(idx))/s_actual(idx)];
+                    100*mean_abs_rel_err(i), ...
+                    final_perc_errs(i)];
 end
 additional_info = zeros(length(chosen_indices), 2);
 additional_info(:,1) = results(:,1);
@@ -289,10 +298,10 @@ for i = 1:size(additional_info, 1)
 end
 
 resultsTable1 = table(results(:,1), results(:,2), results(:,3), ...
-    init_guesses, results(:,4), results(:,5), results(:,6));
+    init_guesses, results(:,4), results(:,5), results(:,6), results(:,7));
 resultsTable1.Properties.VariableNames = {'stateId', 'P_0_val', ...
-    'actualValue', 'initGuess_factor', 'finalEst', 'final_P_val_as_perc_of_P_0', ...
-    'perc_err_final_est'};
+    'actualVal', 'initGuess_factor', 'finalEst', 'final_P_val_over_P_0_perc', ...
+    'avg_rel_err_perc', 'final_perc_err'};
 resultsTable1Str = evalc('disp(resultsTable1)');
 % get rid of silly formatting stuff in the string..
 resultsTable1Str = regexprep(resultsTable1Str, '(</strong>|<strong>)', '');
@@ -300,6 +309,19 @@ resultsTable1Str = regexprep(resultsTable1Str, '(</strong>|<strong>)', '');
 resultsFileName = [folderName, 'results.txt'];
 resultsFile = fopen(resultsFileName, 'w');
 fprintf(resultsFile, resultsTable1Str);
+
+mean_abs_rel_err_without_infs = mean_abs_rel_err(~isinf(mean_abs_rel_err));
+final_perc_errs_without_infs = final_perc_errs(~isinf(final_perc_errs));
+fprintf(resultsFile, 'Over all estimated parameters (not %%, ignores Inf terms):\n');
+fprintf(resultsFile, 'mean (absolute value) relative error: %f\n', ...
+        mean(mean_abs_rel_err_without_infs));
+fprintf(resultsFile, 'mean of relative error squared: %f\n', ...
+        mean(mean_abs_rel_err_without_infs.^2));
+fprintf(resultsFile, 'mean (absolute value) final relative error: %f\n', ...
+        mean(abs(final_perc_errs_without_infs)) / 100);
+fprintf(resultsFile, 'mean of final relative error squared: %f\n', ...
+        mean((final_perc_errs_without_infs/100).^2));
+    
 fclose(resultsFile);
 
 %% More plots
