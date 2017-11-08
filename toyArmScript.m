@@ -48,41 +48,26 @@ robot = robot_build_func(s_actual);
 %% trajectory gen and simulate robot
 coef_file = matfile('coef.mat');
 coef = coef_file.ff_coef2;
-fund_periods = [6     4     5     7     3     8];
+% fund_periods = [6     4     5     7     3     8];
+fund_periods = 5 * ones(1, NUM_JOINTS);
 % coef = coef_file.ff_coef_plane;
 t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
 
-% coef = coef_file.ff_coef2;
-% t_offsets = [0.2, 1, -0.7, -1.2 0.9 0.4];
-
-% coef = coef_file.ff_coef3;
-% t_offsets = -1 * [0.2, 1, -0.7, -1.2 0.9 0.4];
 [q, qd, qdd] = genFFS(coef, t, fund_periods, t_offsets);
-% q = zeros(NUM_ITER, NUM_JOINTS);
-% qd = q;
-% qdd = q;
 
-% % hold trajectory still after a certain time
-% t_quintic_0 = 0.5;
-% t_hold_still = 1;
-% idx_quintic_0 = t_quintic_0/dt + 1;
-% idx_hold_still = t_hold_still/dt + 1;
+% generate quintic splines
+% rng(666);
+% t_sites = 0:2:t_f;
+% NUM_SITES = length(t_sites);
 % 
-% [ret1, ret2, ret3] = quinticTraj(q_desired(idx_quintic_0,:), ...
-%                                  qd_desired(idx_quintic_0,:), ...
-%                                  qdd_desired(idx_quintic_0,:), ...
-%                                  q_desired(idx_quintic_0,:), ...
-%                                  zeros(1, NUM_JOINTS), ...
-%                                  zeros(1, NUM_JOINTS), ...
-%                                  t(idx_quintic_0:idx_hold_still));
-% q_desired(idx_quintic_0:idx_hold_still,:) = ret1;
-% qd_desired(idx_quintic_0:idx_hold_still,:) = ret2;
-% qdd_desired(idx_quintic_0:idx_hold_still,:) = ret3;
+% MAX_Y = 2.5;
+% MAX_YD = 6;
+% MAX_YDD = 20;
+% q_spec = MAX_Y*rand(NUM_SITES, NUM_JOINTS) - MAX_Y/2;
+% qd_spec = MAX_YD*rand(NUM_SITES, NUM_JOINTS) - MAX_YD/2;
+% qdd_spec = MAX_YDD*rand(NUM_SITES, NUM_JOINTS) - MAX_YDD/2;
 % 
-% q_desired(idx_hold_still:end, :) = repmat(q_desired(idx_hold_still, :), ...
-%                                           NUM_ITER - idx_hold_still + 1, 1);
-% qd_desired(idx_hold_still:end, :) = zeros(size(qd_desired(idx_hold_still:end, :)));
-% qdd_desired(idx_hold_still:end, :) = zeros(size(qdd_desired(idx_hold_still:end, :)));
+% [q, qd, qdd] = quinticSpline(q_spec, qd_spec, qdd_spec, t_sites, t);
 
 
 torque = robot.rne([q, qd, qdd], robot.gravity, zeros(1,6));
