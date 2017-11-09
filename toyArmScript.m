@@ -280,7 +280,7 @@ for i = 1:length(chosen_indices)
                                      s_hat_1(idx), s_hat_1(idx)/s_actual(idx)));
     
     diff = s_hat(:,idx) - s_actual(idx) * ones(size(s_hat(:,idx)));
-    normalized_integral = sum(abs(diff)) / s_actual(idx);
+    normalized_integral = abs(sum(abs(diff)) / s_actual(idx));
     mean_abs_rel_err(i) = normalized_integral / NUM_ITER;
     final_perc_errs(i) = 100*(s_hat(end,idx) - s_actual(idx))/s_actual(idx);
                                     
@@ -308,17 +308,17 @@ resultsFileName = [folderName, 'results.txt'];
 resultsFile = fopen(resultsFileName, 'w');
 fprintf(resultsFile, resultsTable1Str);
 
-mean_abs_rel_err_without_infs = mean_abs_rel_err(~isinf(mean_abs_rel_err));
-final_perc_errs_without_infs = final_perc_errs(~isinf(final_perc_errs));
+mean_abs_rel_err_cleaned = mean_abs_rel_err(~isinf(mean_abs_rel_err) & ~isnan(mean_abs_rel_err));
+final_perc_errs_cleaned = final_perc_errs(~isinf(final_perc_errs) & ~isnan(final_perc_errs));
 fprintf(resultsFile, 'Over all estimated parameters (not %%, ignores Inf terms):\n');
 fprintf(resultsFile, 'mean (absolute value) relative error: %f\n', ...
-        mean(mean_abs_rel_err_without_infs));
+        mean(mean_abs_rel_err_cleaned));
 fprintf(resultsFile, 'mean of relative error squared: %f\n', ...
-        mean(mean_abs_rel_err_without_infs.^2));
+        mean(mean_abs_rel_err_cleaned.^2));
 fprintf(resultsFile, 'mean (absolute value) final relative error: %f\n', ...
-        mean(abs(final_perc_errs_without_infs)) / 100);
+        mean(abs(final_perc_errs_cleaned)) / 100);
 fprintf(resultsFile, 'mean of final relative error squared: %f\n', ...
-        mean((final_perc_errs_without_infs/100).^2));
+        mean((final_perc_errs_cleaned/100).^2));
     
 fclose(resultsFile);
 
