@@ -11,8 +11,8 @@ NUM_JOINTS = 6;
 assumed_measurement_sigma = 1 * [2, 3, 1.5];
 % assumed_measurement_sigma = 1 * [6, 4];
 % assumed_measurement_sigma = 1 * [6];
-measurement_sigma = assumed_measurement_sigma;
-% measurement_sigma = zeros(1, m);
+% measurement_sigma = assumed_measurement_sigma;
+measurement_sigma = zeros(1, m);
 
 % build robo
 robot_build_func = @buildPumaDH;
@@ -106,7 +106,9 @@ disp('Start estimating!');
 P_0 = zeros(1, n);
 s_hat_1 = s_actual;
 
-chosen_indices = [6,11,21,15:20,25:30]; % parameters being estimated
+% chosen_indices = [6,11,21,15:20,25:30]; % parameters being estimated
+chosen_indices = 1:30; % parameters being estimated
+% chosen_indices = [2:10, 12:20 ,22:30]; % parameters being estimated
 guess_factors = containers.Map(chosen_indices, 1.5 * ones(size(chosen_indices)));
 % guess_factors(15) = 1.5 * 1.5;
 
@@ -115,22 +117,21 @@ for idx = chosen_indices
     s_hat_1(idx) = guess_factors(idx) * s_hat_1(idx);
 
     % auto tuning
-%     error_in_guess = s_hat_1(idx) - s_actual(idx);
-%     if error_in_guess == 0 
-%         P_0(idx) = 1;
-%     else
-%         P_0(idx) = error_in_guess^2;
-%     end
+    if s_actual(idx) == 0 
+        P_0(idx) = 1;
+    else
+        P_0(idx) = (s_hat_1(idx) - s_actual(idx))^2;
+    end
 end
 
 % fine tuning P_0...
-P_0(6) = 0.16;
-P_0(11) = 15;
-P_0(15) = 0.3;
-P_0(16) = 0.3;
-P_0(25) = 0.03;
-P_0(26) = 0.03;
-P_0(27) = 0.01;
+% P_0(6) = 0.16;
+% P_0(11) = 15;
+% P_0(15) = 0.3;
+% P_0(16) = 0.3;
+% P_0(25) = 0.03;
+% P_0(26) = 0.03;
+% P_0(27) = 0.01;
 
 P_0 = diag(P_0);
 
@@ -269,11 +270,23 @@ ylabel('something..');
 legend('show');
 saveas(gcf, strcat(folderName, '6-P norm.jpg'));
 
-% Save textual results
-results = zeros(length(chosen_indices), 7);
+% Generate textual results
+% ========================
+% calculate correlation matrices
+corr_mats = zeros(size(P));
+for k = 1:NUM_ITER
+    corr_mats(:,:,k) = myCovToCorr(P(:,:,k));
+end
+% sum of off-diagonal correlation values
+off_diag_corr_sums = reshape(sum(abs(corr_mats), 1), size(corr_mats, 2),  ...
+                             size(corr_mats, 3)) - 1;
+off_diag_corr_sums = mean(off_diag_corr_sums, 2);
+
+results = zeros(length(chosen_indices), 8);
 init_guesses = strings(length(chosen_indices), 1);
 final_perc_errs = zeros(1, length(chosen_indices));
 mean_abs_rel_err = zeros(1, length(chosen_indices));
+sum_abs_corr = zeros(1, n);
 for i = 1:length(chosen_indices)
     idx = chosen_indices(i);
     init_guesses(i) = string(sprintf('%0.3f (%0.3f)', ...
@@ -283,11 +296,12 @@ for i = 1:length(chosen_indices)
     normalized_integral = abs(sum(abs(diff)) / s_actual(idx));
     mean_abs_rel_err(i) = normalized_integral / NUM_ITER;
     final_perc_errs(i) = 100*(s_hat(end,idx) - s_actual(idx))/s_actual(idx);
-                                    
+    
     results(i,:) = [idx, P_0(idx, idx), s_actual(idx), s_hat(end,idx), ...
                     100*P(idx, idx, end)/P_0(idx, idx), ...
                     100*mean_abs_rel_err(i), ...
-                    final_perc_errs(i)];
+                    final_perc_errs(i), ...
+                    off_diag_corr_sums(idx)];
 end
 additional_info = zeros(length(chosen_indices), 2);
 additional_info(:,1) = results(:,1);
@@ -296,10 +310,10 @@ for i = 1:size(additional_info, 1)
 end
 
 resultsTable1 = table(results(:,1), results(:,2), results(:,3), ...
-    init_guesses, results(:,4), results(:,5), results(:,6), results(:,7));
+    results(:,4), results(:,5), results(:,6), results(:,7), results(:,8));
 resultsTable1.Properties.VariableNames = {'stateId', 'P_0_val', ...
-    'actualVal', 'initGuess_factor', 'finalEst', 'final_P_val_over_P_0_perc', ...
-    'avg_rel_err_perc', 'final_perc_err'};
+    'actualVal', 'finalEst', 'final_P_val_over_P_0_perc', ...
+    'avg_rel_err_perc', 'final_perc_err', 'off_diag_corr_sum'};
 resultsTable1Str = evalc('disp(resultsTable1)');
 % get rid of silly formatting stuff in the string..
 resultsTable1Str = regexprep(resultsTable1Str, '(</strong>|<strong>)', '');
@@ -319,6 +333,13 @@ fprintf(resultsFile, 'mean (absolute value) final relative error: %f\n', ...
         mean(abs(final_perc_errs_cleaned)) / 100);
 fprintf(resultsFile, 'mean of final relative error squared: %f\n', ...
         mean((final_perc_errs_cleaned/100).^2));
+
+fprintf(resultsFile, '\n');
+
+fprintf(resultsFile, 'correlation coef between mean_abs_rel_err and off_diag_corr_sums: %f\n', ...
+        cleanAndGetCorr(mean_abs_rel_err, off_diag_corr_sums(chosen_indices)'));
+fprintf(resultsFile, 'correlation coef between abs(final_perc_errs) and off_diag_corr_sums: %f\n', ...
+        cleanAndGetCorr(abs(final_perc_errs), off_diag_corr_sums(chosen_indices)'));
     
 fclose(resultsFile);
 
