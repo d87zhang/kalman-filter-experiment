@@ -66,10 +66,23 @@ t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
 % q_spec = MAX_Y*rand(NUM_SITES, NUM_JOINTS) - MAX_Y/2;
 % qd_spec = MAX_YD*rand(NUM_SITES, NUM_JOINTS) - MAX_YD/2;
 % qdd_spec = MAX_YDD*rand(NUM_SITES, NUM_JOINTS) - MAX_YDD/2;
-% 
+
+% modify boundary condition
+% [~, t_begin_idx] = ismember(t_sites(1), t);
+% assert(all(t_begin_idx));
+% q_spec(1,:) = q(t_begin_idx,:);
+% qd_spec(1,:) = qd(t_begin_idx,:);
+% qdd_spec(1,:) = qdd(t_begin_idx,:);
+
 % [q, qd, qdd] = quinticSpline(q_spec, qd_spec, qdd_spec, t_sites, t);
+% [q_spl, qd_spl, qdd_spl] = quinticSpline(q_spec, qd_spec, qdd_spec, ...
+%                                          t_sites, t(t_begin_idx:end));
 
+% q(t_begin_idx:end,:) = q_spl;
+% qd(t_begin_idx:end,:) = qd_spl;
+% qdd(t_begin_idx:end,:) = qdd_spl;
 
+% Generate required torque for this trajectory
 torque = robot.rne([q, qd, qdd], robot.gravity, zeros(1,6));
 % [torque, base_wrench] = robot.rne([q, qd, qdd], robot.gravity, zeros(1,6));
 
