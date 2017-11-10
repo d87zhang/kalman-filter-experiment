@@ -273,14 +273,10 @@ saveas(gcf, strcat(folderName, '6-P norm.jpg'));
 % Generate textual results
 % ========================
 % calculate correlation matrices
-corr_mats = zeros(size(P));
+off_diag_cov_sums = reshape(sum(abs(P), 1), size(P, 2), size(P, 3));
 for k = 1:NUM_ITER
-    corr_mats(:,:,k) = myCovToCorr(P(:,:,k));
+    off_diag_cov_sums(:,k) = off_diag_cov_sums(:,k) - abs(diag(P(:,:,k)));
 end
-% sum of off-diagonal correlation values
-off_diag_corr_sums = reshape(sum(abs(corr_mats), 1), size(corr_mats, 2),  ...
-                             size(corr_mats, 3)) - 1;
-off_diag_corr_sums = mean(off_diag_corr_sums, 2);
 
 results = zeros(length(chosen_indices), 8);
 init_guesses = strings(length(chosen_indices), 1);
@@ -297,11 +293,14 @@ for i = 1:length(chosen_indices)
     mean_abs_rel_err(i) = normalized_integral / NUM_ITER;
     final_perc_errs(i) = 100*(s_hat(end,idx) - s_actual(idx))/s_actual(idx);
     
-    results(i,:) = [idx, P_0(idx, idx), s_actual(idx), s_hat(end,idx), ...
-                    100*P(idx, idx, end)/P_0(idx, idx), ...
-                    100*mean_abs_rel_err(i), ...
-                    final_perc_errs(i), ...
-                    off_diag_corr_sums(idx)];
+    results(i,:) = [idx, ... % 1
+                    P_0(idx, idx), ... % 2
+                    s_actual(idx), ... % 3
+                    s_hat(end,idx), ... % 4
+                    100*P(idx, idx, end)/P_0(idx, idx), ... % 5
+                    100*mean_abs_rel_err(i), ... % 6
+                    final_perc_errs(i), ... % 7
+                    off_diag_cov_sums(idx,end)]; % 8
 end
 additional_info = zeros(length(chosen_indices), 2);
 additional_info(:,1) = results(:,1);
@@ -309,11 +308,12 @@ for i = 1:size(additional_info, 1)
     additional_info(i,2) = guess_factors(additional_info(i,1));
 end
 
-resultsTable1 = table(results(:,1), results(:,2), results(:,3), ...
-    results(:,4), results(:,5), results(:,6), results(:,7), results(:,8));
-resultsTable1.Properties.VariableNames = {'stateId', 'P_0_val', ...
-    'actualVal', 'finalEst', 'final_P_val_over_P_0_perc', ...
-    'avg_rel_err_perc', 'final_perc_err', 'off_diag_corr_sum'};
+resultsTable1 = table(results(:,1), results(:,3), ...
+    results(:,5), results(:,6), results(:,7), results(:,8));
+resultsTable1.Properties.VariableNames = {'stateId', ...
+    'actualVal', 'final_P_val', ...
+    'avg_rel_err_perc', 'final_perc_err', ...
+    'final_off_diag_cov_sum'};
 resultsTable1Str = evalc('disp(resultsTable1)');
 % get rid of silly formatting stuff in the string..
 resultsTable1Str = regexprep(resultsTable1Str, '(</strong>|<strong>)', '');
@@ -321,26 +321,28 @@ resultsTable1Str = regexprep(resultsTable1Str, '(</strong>|<strong>)', '');
 resultsFileName = [folderName, 'results.txt'];
 resultsFile = fopen(resultsFileName, 'w');
 fprintf(resultsFile, resultsTable1Str);
+fprintf(resultsFile, '*final_P_val is presented as percentage of P_0 value.\n');
 
 mean_abs_rel_err_cleaned = mean_abs_rel_err(~isinf(mean_abs_rel_err) & ~isnan(mean_abs_rel_err));
 final_perc_errs_cleaned = final_perc_errs(~isinf(final_perc_errs) & ~isnan(final_perc_errs));
+fprintf(resultsFile, '\n');
 fprintf(resultsFile, 'Over all estimated parameters (not %%, ignores Inf terms):\n');
 fprintf(resultsFile, 'mean (absolute value) relative error: %f\n', ...
         mean(mean_abs_rel_err_cleaned));
-fprintf(resultsFile, 'mean of relative error squared: %f\n', ...
-        mean(mean_abs_rel_err_cleaned.^2));
 fprintf(resultsFile, 'mean (absolute value) final relative error: %f\n', ...
         mean(abs(final_perc_errs_cleaned)) / 100);
-fprintf(resultsFile, 'mean of final relative error squared: %f\n', ...
-        mean((final_perc_errs_cleaned/100).^2));
 
 fprintf(resultsFile, '\n');
+fprintf(resultsFile, 'correlation coef between mean_abs_rel_err and final_cov_sums: %f\n', ...
+        cleanAndGetCorr(mean_abs_rel_err, off_diag_cov_sums(chosen_indices, end)'));
 
-fprintf(resultsFile, 'correlation coef between mean_abs_rel_err and off_diag_corr_sums: %f\n', ...
-        cleanAndGetCorr(mean_abs_rel_err, off_diag_corr_sums(chosen_indices)'));
-fprintf(resultsFile, 'correlation coef between abs(final_perc_errs) and off_diag_corr_sums: %f\n', ...
-        cleanAndGetCorr(abs(final_perc_errs), off_diag_corr_sums(chosen_indices)'));
+fprintf(resultsFile, '\n');
+fprintf(resultsFile, 'correlation coef between mean_abs_err (not relative) and final_cov_sums: %f\n', ...
+        cleanAndGetCorr(mean_abs_rel_err .* abs(s_actual(chosen_indices))', off_diag_cov_sums(chosen_indices, end)'));
     
+% fprintf(resultsFile, '\n');
+% fprintf(resultsFile, '================= Helper stats =================\n');
+
 fclose(resultsFile);
 
 %% More plots
