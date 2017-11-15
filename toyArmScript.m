@@ -28,9 +28,9 @@ s_actual = zeros(n, 1);
 %                   .066    .0125   .066    0   0   0];
 % for DH convention Puma
 s_actual(1:10) = [0, 0, 0, 0, 0   0.35   0   0   0   0];
-s_actual(11:20) = [17.4, -0.3638, 0.006, 0.2275, ...
+s_actual(11:20) = [17.4, 17.4 * -0.3638, 17.4 * 0.006, 17.4 * 0.2275, ...
                   0.13, 0.524, 0.539, 0, 0, 0];
-s_actual(21:30) = [4.8, -0.0203, -0.0141, 0.070, ...
+s_actual(21:30) = [4.8, 4.8 * -0.0203, 4.8 * -0.0141, 4.8 * 0.070, ...
                   0.066, 0.086, 0.0125, 0, 0, 0];
               
 % s_actual = [1.5, 2];
@@ -159,10 +159,10 @@ folderName = 'C:\Users\Difei\Desktop\toyArm pics\currPlots\';
 YLIM_FACTOR = 3;
 
 % Plot of H's condition number
-H_cond = zeros(NUM_ITER, 1);
-for k = 1:NUM_ITER
-    H_cond(k) = cond(H(:,:,k));
-end
+% H_cond = zeros(NUM_ITER, 1);
+% for k = 1:NUM_ITER
+%     H_cond(k) = cond(H(:,:,k));
+% end
 
 figure('units','normalized','outerposition',[0 0 1 1]);
 plot(t, H_cond, 'DisplayName', 'Hs condition num', 'color', 'r');

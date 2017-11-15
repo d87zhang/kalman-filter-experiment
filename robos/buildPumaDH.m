@@ -42,7 +42,7 @@ function puma = buildPumaDH(s)
         L(idx).m = s(base_idx + 1);
         
         if L(idx).m ~= 0
-            L(idx).r = s(base_idx + 2:base_idx + 4);
+            L(idx).r = s(base_idx + 2:base_idx + 4) / L(idx).m;
         else
             L(idx).r = zeros(1, 3);
         end

@@ -5,10 +5,25 @@ function setPumaParam(robot, s_value, idx)
     
     if param_idx == 1
         % it's a mass
+        old_mass = robot.links(joint_idx).m;
         robot.links(joint_idx).m = s_value;
+        % also need to change the center of masses...
+        if s_value ~= 0
+            robot.links(joint_idx).r = robot.links(joint_idx).r ...
+                * old_mass / s_value;
+        else
+            robot.links(joint_idx).r = zeros(size(robot.links(joint_idx).r));
+        end
+            
     elseif param_idx > 1 && param_idx < 5
-        % it's a center of mass
-        robot.links(joint_idx).r(param_idx - 1) = s_value;
+        % it's a mass * center of mass
+        if robot.links(joint_idx).m ~= 0
+            robot.links(joint_idx).r(param_idx - 1) = ...
+                s_value / robot.links(joint_idx).m;
+        else
+            robot.links(joint_idx).r(param_idx - 1) = 0;
+        end
+            
     else
         % it's a moment of inertia
         switch param_idx
