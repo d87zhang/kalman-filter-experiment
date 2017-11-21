@@ -5,18 +5,18 @@ NUM_ITER = t_f / dt + 1;
 t = linspace(0, t_f, NUM_ITER)';
 n = 3 * 10; % dimension of s
 % n = 2;
-m = 6; % dimension of z
+m = 3; % dimension of z
 NUM_JOINTS = 6;
 
-assumed_measurement_sigma = 1 * [2, 3, 1.5, 0.1, 0.1, 0.1];
-% assumed_measurement_sigma = 1 * [2, 3, 1.5];
+% assumed_measurement_sigma = 1 * [2, 3, 1.5, 0.1, 0.1, 0.1];
+assumed_measurement_sigma = 1 * [2, 3, 1.5];
 % assumed_measurement_sigma = 1 * [6, 4];
 % assumed_measurement_sigma = 1 * [6];
-% measurement_sigma = assumed_measurement_sigma;
-measurement_sigma = zeros(1, m);
+measurement_sigma = assumed_measurement_sigma;
+% measurement_sigma = zeros(1, m);
 
 % build robo
-robot_build_func = @buildPumaDHFull;
+robot_build_func = @buildPumaDH;
 % robot_build_func = @buildPumaDH;
 robot_set_params_func = @setPumaParams;
 robot_set_param_func = @setPumaParam;
@@ -28,12 +28,12 @@ s_actual(11:20) = [17.4, 17.4 * -0.3638, 17.4 * 0.006, 17.4 * 0.2275, ...
                    0.13, 0.524, 0.539, 0, 0, 0];
 s_actual(21:30) = [4.8, 4.8 * -0.0203, 4.8 * -0.0141, 4.8 * 0.070, ...
                    0.066, 0.086, 0.0125, 0, 0, 0];
-s_actual(31:40) = [0.82, 0, 0.82 * 0.019, 0, ...
-                   1.8e-3, 1.3e-3, 1.8e-3, 0, 0, 0];
-s_actual(41:50) = [0.34, 0, 0, 0, ...
-                   0.3e-3, 0.4e-3, 0.3e-3, 0, 0, 0];
-s_actual(51:60) = [0.09, 0, 0, 0.09 * 0.032, ...
-                   0.15e-3, 0.15e-3, 0.04e-3, 0, 0, 0];
+% s_actual(31:40) = [0.82, 0, 0.82 * 0.019, 0, ...
+%                    1.8e-3, 1.3e-3, 1.8e-3, 0, 0, 0];
+% s_actual(41:50) = [0.34, 0, 0, 0, ...
+%                    0.3e-3, 0.4e-3, 0.3e-3, 0, 0, 0];
+% s_actual(51:60) = [0.09, 0, 0, 0.09 * 0.032, ...
+%                    0.15e-3, 0.15e-3, 0.04e-3, 0, 0, 0];
               
 % s_actual = [1.5, 2];
 
@@ -161,10 +161,10 @@ folderName = 'C:\Users\Difei\Desktop\toyArm pics\currPlots\';
 YLIM_FACTOR = 3;
 
 % Plot of H's condition number
-% H_cond = zeros(NUM_ITER, 1);
-% for k = 1:NUM_ITER
-%     H_cond(k) = cond(H(:,:,k));
-% end
+H_cond = zeros(NUM_ITER, 1);
+for k = 1:NUM_ITER
+    H_cond(k) = cond(H(:,:,k));
+end
 
 figure('units','normalized','outerposition',[0 0 1 1]);
 plot(t, H_cond, 'DisplayName', 'Hs condition num', 'color', 'r');
@@ -334,13 +334,27 @@ fprintf(resultsFile, 'mean (absolute value) relative error: %f\n', ...
 fprintf(resultsFile, 'mean (absolute value) final relative error: %f\n', ...
         mean(abs(final_perc_errs_cleaned)) / 100);
 
+% some correlations
 fprintf(resultsFile, '\n');
 fprintf(resultsFile, 'correlation coef between mean_abs_rel_err and final_cov_sums: %f\n', ...
         cleanAndGetCorr(mean_abs_rel_err, off_diag_cov_sums(chosen_indices, end)'));
-
-fprintf(resultsFile, '\n');
 fprintf(resultsFile, 'correlation coef between mean_abs_err (not relative) and final_cov_sums: %f\n', ...
         cleanAndGetCorr(mean_abs_rel_err .* abs(s_actual(chosen_indices))', off_diag_cov_sums(chosen_indices, end)'));
+
+final_P_on_diag = diag(P(:, :, end))';
+final_P_on_diag_rel = final_P_on_diag ./ diag(P_0)';
+
+fprintf(resultsFile, '\n');
+fprintf(resultsFile, 'correlation coef between mean_abs_rel_err and final on-diagonal P values (unnormalized): %f\n', ...
+        cleanAndGetCorr(mean_abs_rel_err, final_P_on_diag));
+fprintf(resultsFile, 'correlation coef between mean_abs_err (not relative) and-on diagonal P values (unnormalized): %f\n', ...
+        cleanAndGetCorr(mean_abs_rel_err .* abs(s_actual(chosen_indices))', final_P_on_diag));
+
+fprintf(resultsFile, '\n');
+fprintf(resultsFile, 'correlation coef between mean_abs_rel_err and final on-diagonal P values (relative to P_0): %f\n', ...
+        cleanAndGetCorr(mean_abs_rel_err, final_P_on_diag_rel));
+fprintf(resultsFile, 'correlation coef between mean_abs_err (not relative) and on-diagonal P values (relative to P_0): %f\n', ...
+        cleanAndGetCorr(mean_abs_rel_err .* abs(s_actual(chosen_indices))', final_P_on_diag_rel));
     
 % fprintf(resultsFile, '\n');
 % fprintf(resultsFile, '================= Helper stats =================\n');
