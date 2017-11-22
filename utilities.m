@@ -65,17 +65,25 @@ qd(1:flat_ending_idx, :) = zeros(size(qd(1:flat_ending_idx, :)));
 qdd(1:flat_ending_idx, :) = zeros(size(qdd(1:flat_ending_idx, :)));
 
 %% Plot of observability matrix's rank
-Ob_rank = zeros(1, NUM_ITER);
+Ob_rank_t_invar = zeros(1, NUM_ITER); % assuming a time-invariant system
+Ob_rank_t_var = zeros(1, NUM_ITER); % assuming a time-varying system
 for k = 1:NUM_ITER
+    % assuming a time-invariant system
     Ob = obsv(eye(n), H(:,:,k));
-    Ob_rank(k) = rank(Ob);
+    Ob_rank_t_invar(k) = rank(Ob);
+    
+    % assuming a time-varying system
+    Ob = myObsv(H, k);
+    Ob_rank_t_var(k) = rank(Ob);
 end
 
-figure('units','normalized','outerposition',[0 0 1 1]); hold on
+figure('units','normalized','outerposition',[0 0 1 1]); hold on;
 plot([0, t_f], n * ones(1,2), 'DisplayName', 'number of state variables');
-plot(t, Ob_rank, 'DisplayName', 'Observability matrix rank');
-title('Observability matrix rank vs time');
+plot(t, Ob_rank_t_invar, 'DisplayName', 'Ob matrix rank (time-invariant)');
+plot(t, Ob_rank_t_var, 'DisplayName', 'Ob matrix rank (time-varying)');
+title('Observability matrix (time-invariant) rank vs time');
 ylabel('Time(s)');
 ylabel('Observability matrix rank');
 legend('show');
-saveas(gcf, strcat(folderName, 'Observability matrix rank.jpg'));
+
+saveas(gcf, strcat(folderName, 'Observability matrix rank.fig'));

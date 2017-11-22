@@ -109,7 +109,7 @@ P_0 = zeros(1, n);
 s_hat_1 = s_actual;
 
 % chosen_indices = [6,11,21,15:20,25:30]; % parameters being estimated
-chosen_indices = 1:30; % parameters being estimated
+chosen_indices = 1:n; % parameters being estimated
 % chosen_indices = [2:10, 12:20 ,22:30]; % parameters being estimated
 guess_factors = containers.Map(chosen_indices, 1.5 * ones(size(chosen_indices)));
 % guess_factors(15) = 1.5 * 1.5;
