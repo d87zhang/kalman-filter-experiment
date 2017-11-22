@@ -63,3 +63,19 @@ flat_ending_idx = 2.5/dt + 1;
 q(1:flat_ending_idx, :) = repmat(q(flat_ending_idx, :), flat_ending_idx, 1);
 qd(1:flat_ending_idx, :) = zeros(size(qd(1:flat_ending_idx, :)));
 qdd(1:flat_ending_idx, :) = zeros(size(qdd(1:flat_ending_idx, :)));
+
+%% Plot of observability matrix's rank
+Ob_rank = zeros(1, NUM_ITER);
+for k = 1:NUM_ITER
+    Ob = obsv(eye(n), H(:,:,k));
+    Ob_rank(k) = rank(Ob);
+end
+
+figure('units','normalized','outerposition',[0 0 1 1]); hold on
+plot([0, t_f], n * ones(1,2), 'DisplayName', 'number of state variables');
+plot(t, Ob_rank, 'DisplayName', 'Observability matrix rank');
+title('Observability matrix rank vs time');
+ylabel('Time(s)');
+ylabel('Observability matrix rank');
+legend('show');
+saveas(gcf, strcat(folderName, 'Observability matrix rank.jpg'));
