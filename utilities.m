@@ -65,16 +65,19 @@ qd(1:flat_ending_idx, :) = zeros(size(qd(1:flat_ending_idx, :)));
 qdd(1:flat_ending_idx, :) = zeros(size(qdd(1:flat_ending_idx, :)));
 
 %% Plot of observability matrix's rank
+% rankFunc = @rank;
+rankFunc = @(A)(myRank(A, 1e7));
+
 Ob_rank_t_invar = zeros(1, NUM_ITER); % assuming a time-invariant system
 Ob_rank_t_var = zeros(1, NUM_ITER); % assuming a time-varying system
 for k = 1:NUM_ITER
     % assuming a time-invariant system
     Ob = obsv(eye(n), H(:,:,k));
-    Ob_rank_t_invar(k) = rank(Ob);
+    Ob_rank_t_invar(k) = rankFunc(Ob);
     
     % assuming a time-varying system
     Ob = myObsv(H, k);
-    Ob_rank_t_var(k) = rank(Ob);
+    Ob_rank_t_var(k) = rankFunc(Ob);
 end
 
 figure('units','normalized','outerposition',[0 0 1 1]); hold on;

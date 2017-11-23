@@ -12,14 +12,19 @@ NUM_JOINTS = 6;
 assumed_measurement_sigma = 1 * [2, 3, 1.5];
 % assumed_measurement_sigma = 1 * [6, 4];
 % assumed_measurement_sigma = 1 * [6];
-measurement_sigma = assumed_measurement_sigma;
-% measurement_sigma = zeros(1, m);
+% measurement_sigma = assumed_measurement_sigma;
+measurement_sigma = zeros(1, m);
 
 % build robo
 robot_build_func = @buildPumaDH;
-% robot_build_func = @buildPumaDH;
 robot_set_params_func = @setPumaParams;
 robot_set_param_func = @setPumaParam;
+% for plane man
+% S_SPEC = 'MoI';
+% robot_build_func = @(s)(buildPlaneMan(s, S_SPEC));
+% robot_set_params_func = @(robot, s)(setPlaneParams(robot, s, S_SPEC));
+% robot_set_param_func = @(robot, s_value, idx)(setPlaneParam(robot, s_value, idx, S_SPEC));
+
 % dynamic parameters
 s_actual = zeros(n, 1);
 % for DH convention Puma
@@ -56,6 +61,12 @@ fund_periods = 5 * ones(1, NUM_JOINTS);
 t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
 
 [q, qd, qdd] = genFFS(coef, t, fund_periods, t_offsets);
+
+% q = zeros(size(q));
+% qd = zeros(size(qd));
+% % qdd = zeros(size(qdd));
+% qdd = ones(size(qdd));
+% qdd(:,2) = 0.5 * qdd(:,2);
 
 % generate quintic splines
 % rng(666);
@@ -231,10 +242,10 @@ end
 
 % for 2 DoF Plane Man
 % figure('units','normalized','outerposition',[0 0 1 1]); hold on
-% plot([0, t_f], s_actual(1) * ones(1, 2), 'DisplayName', 'true mass 1');
-% plot([0, t_f], s_actual(2) * ones(1, 2), 'DisplayName', 'true mass 2');
-% plot(t, s_hat(:,1), 'DisplayName', 'est mass 1');
-% plot(t, s_hat(:,2), 'DisplayName', 'est mass 2');
+% plot([0, t_f], s_actual(1) * ones(1, 2), 'DisplayName', sprintf('true %s 1', S_SPEC));
+% plot([0, t_f], s_actual(2) * ones(1, 2), 'DisplayName', sprintf('true %s 2', S_SPEC));
+% plot(t, s_hat(:,1), 'DisplayName', sprintf('est %s 1', S_SPEC));
+% plot(t, s_hat(:,2), 'DisplayName', sprintf('est %s 2', S_SPEC));
 % 
 % title('Estimates vs. time');
 % xlabel('Time(s)');
