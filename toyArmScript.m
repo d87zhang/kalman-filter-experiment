@@ -35,7 +35,7 @@ s_actual(21:30) = [4.8, 4.8 * -0.0203, 4.8 * -0.0141, 4.8 * 0.070, ...
 % s_actual(51:60) = [0.09, 0, 0, 0.09 * 0.032, ...
 %                    0.15e-3, 0.15e-3, 0.04e-3, 0, 0, 0];
               
-% s_actual = [1.5, 2];
+% s_actual = [1.5, 2]';
 
 % build robo (but it fake)
 % robot_build_func = @(s)(FakeRobo(s, NUM_JOINTS));

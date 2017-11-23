@@ -1,6 +1,10 @@
-function robot = buildPlaneMan(s)
+function robot = buildPlaneMan(s, s_spec)
     % Returns a SerialLink robot built with the parameters from the given
     % state vector s
+    % spec is a string (taking on well-known values) specifying what the
+    % contents of s represent
+    
+    assert(strcmp(s_spec, 'mass') | strcmp(s_spec, 'MoI'));
     
     L1 = 2;
     L2 = 3.5;
@@ -21,14 +25,21 @@ function robot = buildPlaneMan(s)
     % Jm  actuator: motor inertia (motor referred)
     
     % dynamic parameters
-    link1_m = s(1);
     link1_COM_x = -L1/2;
-    link1_inertia_about_z = link1_COM_x^2;
-
-    link2_m = s(2);
     link2_COM_x = -L2/2;
-    link2_inertia_about_z = link2_COM_x^2;
-
+    
+    if strcmp(s_spec, 'mass')
+        link1_m = s(1);
+        link2_m = s(2);
+        link1_inertia_about_z = link1_COM_x^2;
+        link2_inertia_about_z = link2_COM_x^2;
+    else
+        link1_m = 1.5;
+        link2_m = 2;
+        link1_inertia_about_z = s(1);
+        link2_inertia_about_z = s(2);
+    end
+    
     links(1).m = link1_m;
     links(1).r = [link1_COM_x 0 0]; % Must be a vector of 3 elements
     links(1).I = [0 0 link1_inertia_about_z]; % Can be 3 or 6 element vector, or a 3x3 matrix
