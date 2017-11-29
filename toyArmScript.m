@@ -68,6 +68,15 @@ t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
 % qdd = ones(size(qdd));
 % qdd(:,2) = 0.5 * qdd(:,2);
 
+% Generate constant spinning?
+% q(:,4:end) = zeros(size(q(:,4:end)));
+% qd = zeros(size(qd));
+% qdd = zeros(size(qdd));
+% q(:,1) = 0.5 * t.^2;
+% qd(:,1) = t;
+% qdd(:,1) = ones(size(qdd(:,1)));
+% % q(:,2) = 0.5;
+
 % generate quintic splines
 % rng(666);
 % t_sites = 0:2:t_f;
@@ -121,9 +130,9 @@ s_hat_1 = s_actual;
 
 % chosen_indices = [6,11,21,15:20,25:30]; % parameters being estimated
 chosen_indices = 1:n; % parameters being estimated
+% chosen_indices = [6, 16, 27];
 % chosen_indices = [2:10, 12:20 ,22:30]; % parameters being estimated
 guess_factors = containers.Map(chosen_indices, 1.5 * ones(size(chosen_indices)));
-% guess_factors(15) = 1.5 * 1.5;
 
 for idx = chosen_indices
     P_0(idx) = 1;
@@ -169,6 +178,7 @@ end
 
 %% Plot results!
 folderName = 'C:\Users\Difei\Desktop\toyArm pics\currPlots\';
+tempFolderName = 'C:\Users\Difei\Desktop\toyArm pics\tempPlots\';
 YLIM_FACTOR = 3;
 
 % Plot of H's condition number
@@ -188,71 +198,74 @@ saveas(gcf, strcat(folderName, '1-H condition number.jpg'));
 
 OFFSET_DESCRIPTION_MAP = containers.Map({2, 3, 4}, {'x', 'y', 'z'});
 
-for idx = 1:(n/10)
-    base_idx = 10 * (idx-1);
-    figure('units','normalized','outerposition',[0 0 1 1]);
-    % plot of mass estimates
-    subplot(3, 1, 1);
-    hold on
-    plot([0, t_f], s_actual(base_idx + 1) * ones(1, 2), 'color', 'b');
-    plot(t, s_hat(:,base_idx + 1), 'color', 'r');
-    hold off
-    
-    title(sprintf('link %d - mass est vs. time', idx));
-    xlabel('Time(s)');
-    ylabel('mass(kg)');
-    max_abs = max([abs(s_actual(base_idx + 1)); 0.1]);
-    ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-    
-    % plot of first moment estimates
-    subplot(3, 1, 2);
-    for offset_idx = 2:4
+if mod(n, 10) == 0
+    for idx = 1:(n/10)
+        base_idx = 10 * (idx-1);
+        figure('units','normalized','outerposition',[0 0 1 1]);
+        % plot of mass estimates
+        subplot(3, 1, 1);
         hold on
-        plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), ...
-            'DisplayName', sprintf('true moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
-        plot(t, s_hat(:,base_idx + offset_idx), ...
-            'DisplayName', sprintf('est moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
+        plot([0, t_f], s_actual(base_idx + 1) * ones(1, 2), 'color', 'b');
+        plot(t, s_hat(:,base_idx + 1), 'color', 'r');
         hold off
-    end
-    
-    title(sprintf('link %d - center of mass est vs. time', idx));
-    xlabel('Time(s)');
-    ylabel('center of mass(m)');
-    max_abs = max([abs(s_actual(base_idx+2:base_idx+4)); 0.1]);
-    ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-    legend('show');
-    
-    % plot of moment of inertia estimates
-    subplot(3, 1, 3);
-    for offset_idx = 5:10
-        hold on
-        plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), 'color', 'b');
-        plot(t, s_hat(:,base_idx + offset_idx), 'color', 'r');
-        hold off
-    end
-    
-    title(sprintf('link %d - moment of inertia est vs. time', idx));
-    xlabel('Time(s)');
-    ylabel('Moment of inertia(kg*m^2)');
-    max_abs = max([abs(s_actual(base_idx+5:base_idx+10)); 0.1]);
-    ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
-    
-    saveas(gcf, strcat(folderName, sprintf('%d-estimate joint %d.jpg', idx+1, idx)));
-end
 
-% for 2 DoF Plane Man
-% figure('units','normalized','outerposition',[0 0 1 1]); hold on
-% plot([0, t_f], s_actual(1) * ones(1, 2), 'DisplayName', sprintf('true %s 1', S_SPEC));
-% plot([0, t_f], s_actual(2) * ones(1, 2), 'DisplayName', sprintf('true %s 2', S_SPEC));
-% plot(t, s_hat(:,1), 'DisplayName', sprintf('est %s 1', S_SPEC));
-% plot(t, s_hat(:,2), 'DisplayName', sprintf('est %s 2', S_SPEC));
-% 
-% title('Estimates vs. time');
-% xlabel('Time(s)');
-% ylabel('Mass(kg)');
-% 
-% legend('show');
-% saveas(gcf, strcat(folderName, '2-estimates.jpg'));
+        title(sprintf('link %d - mass est vs. time', idx));
+        xlabel('Time(s)');
+        ylabel('mass(kg)');
+        max_abs = max([abs(s_actual(base_idx + 1)); 0.1]);
+        ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+
+        % plot of first moment estimates
+        subplot(3, 1, 2);
+        for offset_idx = 2:4
+            hold on
+            plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), ...
+                'DisplayName', sprintf('true moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
+            plot(t, s_hat(:,base_idx + offset_idx), ...
+                'DisplayName', sprintf('est moment - %s', OFFSET_DESCRIPTION_MAP(offset_idx)));
+            hold off
+        end
+
+        title(sprintf('link %d - center of mass est vs. time', idx));
+        xlabel('Time(s)');
+        ylabel('center of mass(m)');
+        max_abs = max([abs(s_actual(base_idx+2:base_idx+4)); 0.1]);
+        ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+        legend('show');
+
+        % plot of moment of inertia estimates
+        subplot(3, 1, 3);
+        for offset_idx = 5:10
+            hold on
+            plot([0, t_f], s_actual(base_idx + offset_idx) * ones(1, 2), 'color', 'b');
+            plot(t, s_hat(:,base_idx + offset_idx), 'color', 'r');
+            hold off
+        end
+
+        title(sprintf('link %d - moment of inertia est vs. time', idx));
+        xlabel('Time(s)');
+        ylabel('Moment of inertia(kg*m^2)');
+        max_abs = max([abs(s_actual(base_idx+5:base_idx+10)); 0.1]);
+        ylim([max_abs * -YLIM_FACTOR, max_abs * YLIM_FACTOR]);
+
+        saveas(gcf, strcat(folderName, sprintf('%d-estimate joint %d.jpg', idx+1, idx)));
+    end
+else
+    % for 2 DoF Plane Man (and occasionally other stuff..)
+    figure('units','normalized','outerposition',[0 0 1 1]); hold on
+    plot([0, t_f], s_actual(1) * ones(1, 2), 'DisplayName', sprintf('true %s 1', S_SPEC));
+    plot([0, t_f], s_actual(2) * ones(1, 2), 'DisplayName', sprintf('true %s 2', S_SPEC));
+    plot(t, s_hat(:,1), 'DisplayName', sprintf('est %s 1', S_SPEC));
+    plot(t, s_hat(:,2), 'DisplayName', sprintf('est %s 2', S_SPEC));
+
+    title('Estimates vs. time');
+    xlabel('Time(s)');
+    ylabel('Mass(kg)');
+
+    legend('show');
+    saveas(gcf, strcat(folderName, '2-estimates.jpg'));
+
+end
 
 % Plot of residual
 figure('units','normalized','outerposition',[0 0 1 1]); hold on
@@ -283,7 +296,7 @@ ylabel('something..');
 legend('show');
 saveas(gcf, strcat(folderName, '6-P norm.jpg'));
 
-% Generate textual results
+%% Generate textual results
 % ========================
 % calculate correlation matrices
 off_diag_cov_sums = reshape(sum(abs(P), 1), size(P, 2), size(P, 3));
@@ -354,6 +367,8 @@ fprintf(resultsFile, 'correlation coef between mean_abs_err (not relative) and f
 
 final_P_on_diag = diag(P(:, :, end))';
 final_P_on_diag_rel = final_P_on_diag ./ diag(P_0)';
+final_P_on_diag_rel = final_P_on_diag_rel(chosen_indices);
+final_P_on_diag = final_P_on_diag(chosen_indices);
 
 fprintf(resultsFile, '\n');
 fprintf(resultsFile, 'correlation coef between mean_abs_rel_err and final on-diagonal P values (unnormalized): %f\n', ...

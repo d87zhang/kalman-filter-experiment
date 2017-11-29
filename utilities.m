@@ -85,8 +85,51 @@ plot([0, t_f], n * ones(1,2), 'DisplayName', 'number of state variables');
 plot(t, Ob_rank_t_invar, 'DisplayName', 'Ob matrix rank (time-invariant)');
 plot(t, Ob_rank_t_var, 'DisplayName', 'Ob matrix rank (time-varying)');
 title('Observability matrix (time-invariant) rank vs time');
-ylabel('Time(s)');
+xlabel('Time(s)');
 ylabel('Observability matrix rank');
 legend('show');
 
 saveas(gcf, strcat(folderName, 'Observability matrix rank.fig'));
+
+%% Plot some estimates
+figure('units','normalized','outerposition',[0 0 1 1]); hold on
+
+for idx = chosen_indices
+    plot([0, t_f], s_actual(idx) * ones(1,2), 'DisplayName', ['true ', getParamDescript(idx)]);
+    plot(t, s_hat(:,idx), 'DisplayName', ['est ', getParamDescript(idx)]);
+end
+
+title('Some estimates vs. time');
+xlabel('Time(s)');
+ylabel('Some estimate..');
+legend('show');
+
+saveas(gcf, strcat(tempFolderName, 'Some estimates vs time.jpg'));
+
+%% plotting part of H
+figure('units','normalized','outerposition',[0 0 1 1]); hold on;
+
+param_ids_of_interest = chosen_indices;
+for i = 1:1
+    for j = param_ids_of_interest
+        plot(t, reshape(H(i,j,:), 1, size(H, 3)), ...
+            'DisplayName', sprintf('H(%d,%d)', i, j));
+    end
+end
+
+legend('show');
+title('Some H values');
+
+saveas(gcf, strcat(tempFolderName, 'Some H values.jpg'));
+
+%% plotting variances (on-diagonal P values)
+figure('units','normalized','outerposition',[0 0 1 1]); hold on;
+
+for idx = chosen_indices
+    plot(t, reshape(P(idx, idx, :), 1, size(P, 3)), 'DisplayName', getParamDescript(idx));
+end
+
+legend('show');
+xlabel('Time(s)');
+ylabel('Variance');
+title('Variances vs time');
