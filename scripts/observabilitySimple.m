@@ -2,11 +2,13 @@
 % robot is the two link, revolute joint, planar robot from the Spong book.
 % See equations on p.270
 
-syms t q1 q2;
+t = sym('t', 'real');
+syms q1 q2;
 
-% TODO try sin or cos
-q1 = t^2;
+q1 = t;
 q2 = t^2;
+% q1 = t^2;
+% q2 = t^2;
 % q1 = sin(t);
 % q2 = sin(t);
 
@@ -22,19 +24,26 @@ qdd2 = diff(qd2);
 Y = [qdd1, cos(q2)*(2 * qdd1 + qdd2) - sin(q2)*(qd1^2 + 2 * qd1 * qd2), qdd2; ...
      0, cos(q2) * qdd1 + sin(q2) * qd1^2, qdd1 + qdd2];
 
-% indef_integral = int(Y.' * Y, t); % no closed-form solution, at least according to MatLab
+integrand = simplify(Y' * Y);
+
+if NUMERICAL_APPROACH
+    fun_to_integrate = @(t_val)(eval(subs(integrand, t, t_val)));
+    obs_gramiam = integral(fun_to_integrate, t_0, t_f, 'ArrayValued', true);
+    % TODO outdated?
+else
+    obs_gramiam = int(integrand, t);
+    obs_gramiam = simplify(obs_gramiam);
+end
+
+% Fix integrations that Matlab can't handle
+% obs_gramiam(2,2) = 19/2 * sqrt(sym(pi)) * fresnelc((2*t)/sqrt(sym(pi))) ...
+%                     + t*(cos(2*t^2) + 4*(5 + 4*t^4 - 5*t^2*sin(2*t^2)));
 
 % evaluating the definite integral..
 t_0 = 0;
-t_f = 10;
+t_f = 1;
+def_integral = subs(obs_gramiam, t, t_f) - subs(obs_gramiam, t, t_0);
+def_integral = simplify(def_integral);
 
-if NUMERICAL_APPROACH
-    fun_to_integrate = @(t_val)(eval(subs(Y.' * Y, t, t_val)));
-    obs_gramiam = integral(fun_to_integrate, t_0, t_f, 'ArrayValued', true);
-else
-    obs_gramiam = int(Y.' * Y, t);
-    % TODO implement (if used at all..)
-end
-
-det(obs_gramiam)
-rank(obs_gramiam)
+det(def_integral)
+rank(def_integral)
