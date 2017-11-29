@@ -48,6 +48,39 @@ s_actual(21:30) = [4.8, 4.8 * -0.0203, 4.8 * -0.0141, 4.8 * 0.070, ...
 
 robot = robot_build_func(s_actual);
 
+% Set up initial conditions (initial guess and P_0)
+P_0 = zeros(1, n);
+s_hat_1 = s_actual;
+
+% chosen_indices = [6,11,21,15:20,25:30]; % parameters being estimated
+chosen_indices = 1:n; % parameters being estimated
+% chosen_indices = [6, 16, 27];
+% chosen_indices = [2:10, 12:20 ,22:30]; % parameters being estimated
+guess_factors = containers.Map(chosen_indices, 1.5 * ones(size(chosen_indices)));
+
+for idx = chosen_indices
+    P_0(idx) = 1;
+    s_hat_1(idx) = guess_factors(idx) * s_hat_1(idx);
+
+    % auto tuning
+    if s_actual(idx) == 0 
+        P_0(idx) = 1;
+    else
+        P_0(idx) = (s_hat_1(idx) - s_actual(idx))^2;
+    end
+end
+
+% fine tuning P_0...
+% P_0(6) = 0.16;
+% P_0(11) = 15;
+% P_0(15) = 0.3;
+% P_0(16) = 0.3;
+% P_0(25) = 0.03;
+% P_0(26) = 0.03;
+% P_0(27) = 0.01;
+
+P_0 = diag(P_0);
+
 % this is so important :)
 [sf1_y, sf1_Fs] = audioread('soundeffects\militarycreation.wav');
 [sf2_y, sf2_Fs] = audioread('soundeffects\villagercreation.wav');
@@ -125,38 +158,7 @@ end
 %% estimate parameters
 disp('Start estimating!');
 
-P_0 = zeros(1, n);
-s_hat_1 = s_actual;
-
-% chosen_indices = [6,11,21,15:20,25:30]; % parameters being estimated
-chosen_indices = 1:n; % parameters being estimated
-% chosen_indices = [6, 16, 27];
-% chosen_indices = [2:10, 12:20 ,22:30]; % parameters being estimated
-guess_factors = containers.Map(chosen_indices, 1.5 * ones(size(chosen_indices)));
-
-for idx = chosen_indices
-    P_0(idx) = 1;
-    s_hat_1(idx) = guess_factors(idx) * s_hat_1(idx);
-
-    % auto tuning
-    if s_actual(idx) == 0 
-        P_0(idx) = 1;
-    else
-        P_0(idx) = (s_hat_1(idx) - s_actual(idx))^2;
-    end
-end
-
-% fine tuning P_0...
-% P_0(6) = 0.16;
-% P_0(11) = 15;
-% P_0(15) = 0.3;
-% P_0(16) = 0.3;
-% P_0(25) = 0.03;
-% P_0(26) = 0.03;
-% P_0(27) = 0.01;
-
-P_0 = diag(P_0);
-
+% assumes initial conditions: s_hat_1 and P_0 are populated
 est_robot = robot_build_func(s_hat_1);
 
 % ds = small difference in states used for numerical differentiation
