@@ -1,5 +1,5 @@
-function setPumaParam(robot, s_value, idx)
-    % Change one param for the Puma robot
+function setFullRoboParam(robot, s_value, idx)
+    % Change one param for a robot specified with 10n parameters
     joint_idx = ceil(idx/10);
     param_idx = mod(idx, 10);
     
