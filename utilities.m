@@ -91,25 +91,32 @@ legend('show');
 
 saveas(gcf, strcat(folderName, 'Observability matrix rank.fig'));
 
-%% Plot some estimates
-figure('units','normalized','outerposition',[0 0 1 1]); hold on
+%% save init conditions
+save('temp_saved_vars\init_cond.mat', 's_hat_1', '-append');
+save('temp_saved_vars\init_cond.mat', 'P_0', '-append');
 
-for idx = chosen_indices
-    plot([0, t_f], s_actual(idx) * ones(1,2), 'DisplayName', ['true ', getParamDescript(idx)]);
-    plot(t, s_hat(:,idx), 'DisplayName', ['est ', getParamDescript(idx)]);
+%% load init conditions
+init_cond_file = matfile('temp_saved_vars\init_cond.mat');
+s_hat_1 = init_cond_file.s_hat_1;
+P_0 = init_cond_file.P_0;
+
+%% plotting variances (on-diagonal P values)
+figure('units','normalized','outerposition',[0 0 1 1]); hold on;
+
+for idx = param_ids_of_interest
+    plot(t, reshape(P(idx, idx, :), 1, size(P, 3)), 'DisplayName', getParamDescript(idx));
 end
 
-title('Some estimates vs. time');
-xlabel('Time(s)');
-ylabel('Some estimate..');
 legend('show');
-
-saveas(gcf, strcat(tempFolderName, 'Some estimates vs time.jpg'));
+xlabel('Time(s)');
+ylabel('Variance');
+title('Variances vs time');
 
 %% plotting part of H
 figure('units','normalized','outerposition',[0 0 1 1]); hold on;
 
-param_ids_of_interest = chosen_indices;
+% param_ids_of_interest = chosen_indices;
+param_ids_of_interest = [27, 16, 6];
 for i = 1:1
     for j = param_ids_of_interest
         plot(t, reshape(H(i,j,:), 1, size(H, 3)), ...
@@ -122,14 +129,20 @@ title('Some H values');
 
 saveas(gcf, strcat(tempFolderName, 'Some H values.jpg'));
 
-%% plotting variances (on-diagonal P values)
-figure('units','normalized','outerposition',[0 0 1 1]); hold on;
+%% Plot some estimates
+figure('units','normalized','outerposition',[0 0 1 1]); hold on
 
-for idx = chosen_indices
-    plot(t, reshape(P(idx, idx, :), 1, size(P, 3)), 'DisplayName', getParamDescript(idx));
+% TODO plot normalized estimates?
+
+% for idx = param_ids_of_interest
+for idx = [27]
+    plot([0, t_f], s_actual(idx) * ones(1,2), 'DisplayName', ['true ', getParamDescript(idx)]);
+    plot(t, s_hat(:,idx), 'DisplayName', ['est ', getParamDescript(idx)]);
 end
 
-legend('show');
+title('Some estimates vs. time');
 xlabel('Time(s)');
-ylabel('Variance');
-title('Variances vs time');
+ylabel('Some estimate..');
+legend('show');
+
+saveas(gcf, strcat(tempFolderName, 'Some estimates vs time.jpg'));

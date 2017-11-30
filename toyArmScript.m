@@ -319,7 +319,7 @@ for i = 1:length(chosen_indices)
     diff = s_hat(:,idx) - s_actual(idx) * ones(size(s_hat(:,idx)));
     normalized_integral = abs(sum(abs(diff)) / s_actual(idx));
     mean_abs_rel_err(i) = normalized_integral / NUM_ITER;
-    final_perc_errs(i) = 100*(s_hat(end,idx) - s_actual(idx))/s_actual(idx);
+    final_perc_errs(i) = 100*(s_hat(end,idx) - s_actual(idx))/abs(s_actual(idx));
     
     results(i,:) = [idx, ... % 1
                     P_0(idx, idx), ... % 2
@@ -350,6 +350,7 @@ resultsFileName = [folderName, 'results.txt'];
 resultsFile = fopen(resultsFileName, 'w');
 fprintf(resultsFile, resultsTable1Str);
 fprintf(resultsFile, '*final_P_val is presented as percentage of P_0 value.\n');
+fprintf(resultsFile, '*final_perc_err is positive when the final estimate is higher than the actual value and vice versa.\n');
 
 mean_abs_rel_err_cleaned = mean_abs_rel_err(~isinf(mean_abs_rel_err) & ~isnan(mean_abs_rel_err));
 final_perc_errs_cleaned = final_perc_errs(~isinf(final_perc_errs) & ~isnan(final_perc_errs));

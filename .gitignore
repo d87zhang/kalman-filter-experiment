@@ -2,6 +2,7 @@
 temp.m
 testFunc.m
 soundeffects/
+temp_saved_vars/
 
 # below is from https://github.com/github/gitignore/blob/master/Global/Matlab.gitignore
 ##---------------------------------------------------
