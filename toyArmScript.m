@@ -3,48 +3,22 @@ dt = 0.005;
 t_f = 10;
 NUM_ITER = t_f / dt + 1;
 t = linspace(0, t_f, NUM_ITER)';
-n = 3 * 10; % dimension of s
-% n = 2;
-m = 3; % dimension of z
-NUM_JOINTS = 6;
 
-% assumed_measurement_sigma = 1 * [2, 3, 1.5, 0.1, 0.1, 0.1];
-assumed_measurement_sigma = 1 * [2, 3, 1.5];
-% assumed_measurement_sigma = 1 * [6, 4];
-% assumed_measurement_sigma = 1 * [6];
+% curr_setup = SPONG_PLANE_MAN_SETUP;
+curr_setup = DH_PUMA_EST_3L_SETUP;
+
+n = curr_setup.n; % dimension of s
+m = curr_setup.m; % dimension of z
+NUM_JOINTS = curr_setup.NUM_JOINTS;
+robot_build_func = curr_setup.robot_build_func;
+robot_set_params_func = curr_setup.robot_set_params_func;
+robot_set_param_func = curr_setup.robot_set_param_func;
+assumed_measurement_sigma = curr_setup.assumed_measurement_sigma;
+s_actual = curr_setup.s_actual;
+traj_coef = curr_setup.traj_coef;
+
 % measurement_sigma = assumed_measurement_sigma;
 measurement_sigma = zeros(1, m);
-
-% build robo
-robot_build_func = @buildPumaDH;
-robot_set_params_func = @setPumaParams;
-robot_set_param_func = @setPumaParam;
-% for plane man
-% S_SPEC = 'MoI';
-% robot_build_func = @(s)(buildPlaneMan(s, S_SPEC));
-% robot_set_params_func = @(robot, s)(setPlaneParams(robot, s, S_SPEC));
-% robot_set_param_func = @(robot, s_value, idx)(setPlaneParam(robot, s_value, idx, S_SPEC));
-
-% dynamic parameters
-s_actual = zeros(n, 1);
-% for DH convention Puma
-s_actual(1:10) = [0, 0, 0, 0, 0   0.35   0   0   0   0];
-s_actual(11:20) = [17.4, 17.4 * -0.3638, 17.4 * 0.006, 17.4 * 0.2275, ...
-                   0.13, 0.524, 0.539, 0, 0, 0];
-s_actual(21:30) = [4.8, 4.8 * -0.0203, 4.8 * -0.0141, 4.8 * 0.070, ...
-                   0.066, 0.086, 0.0125, 0, 0, 0];
-% s_actual(31:40) = [0.82, 0, 0.82 * 0.019, 0, ...
-%                    1.8e-3, 1.3e-3, 1.8e-3, 0, 0, 0];
-% s_actual(41:50) = [0.34, 0, 0, 0, ...
-%                    0.3e-3, 0.4e-3, 0.3e-3, 0, 0, 0];
-% s_actual(51:60) = [0.09, 0, 0, 0.09 * 0.032, ...
-%                    0.15e-3, 0.15e-3, 0.04e-3, 0, 0, 0];
-              
-% s_actual = [1.5, 2]';
-
-% build robo (but it fake)
-% robot_build_func = @(s)(FakeRobo(s, NUM_JOINTS));
-% s_actual = [2.4, 6, 3.7, 7.3, 4];
 
 robot = robot_build_func(s_actual);
 
@@ -86,14 +60,11 @@ P_0 = diag(P_0);
 [sf2_y, sf2_Fs] = audioread('soundeffects\villagercreation.wav');
 
 %% trajectory gen and simulate robot
-coef_file = matfile('coef.mat');
-coef = coef_file.ff_coef2;
 % fund_periods = [6     4     5     7     3     8];
 fund_periods = 5 * ones(1, NUM_JOINTS);
-% coef = coef_file.ff_coef_plane;
 t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
 
-[q, qd, qdd] = genFFS(coef, t, fund_periods, t_offsets);
+[q, qd, qdd] = genFFS(traj_coef, t, fund_periods, t_offsets);
 
 % q = zeros(size(q));
 % qd = zeros(size(qd));
