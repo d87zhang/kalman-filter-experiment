@@ -171,6 +171,14 @@ saveas(gcf, strcat(folderName, '1-H condition number.jpg'));
 
 OFFSET_DESCRIPTION_MAP = containers.Map({2, 3, 4}, {'x', 'y', 'z'});
 
+% sanity check - variance should always be positive
+for k = 1:NUM_ITER
+    if ~all(diag(P(:,:,k)) > -1e-5)
+        warning('Some of P''s on-diagonal values are negative at iter = %d', k);
+        assert(false);
+    end
+end
+
 if mod(n, 10) == 0
     for idx = 1:(n/10)
         base_idx = 10 * (idx-1);

@@ -100,6 +100,16 @@ init_cond_file = matfile('temp_saved_vars\init_cond.mat');
 s_hat_1 = init_cond_file.s_hat_1;
 P_0 = init_cond_file.P_0;
 
+%% detect parameters that don't contribute in H
+H_threshold = 1e-5;
+
+none_contributors_mask = false(1, n);
+for idx = 1:n
+    none_contributors_mask(idx) = all(all(H(:,idx,:) < H_threshold));
+end
+list_params = 1:n;
+none_contributors_idx = list_params(none_contributors_mask);
+
 %% plotting variances (on-diagonal P values)
 figure('units','normalized','outerposition',[0 0 1 1]); hold on;
 
