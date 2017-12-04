@@ -280,9 +280,11 @@ saveas(gcf, strcat(folderName, '6-P norm.jpg'));
 %% Generate textual results
 % ========================
 % calculate correlation matrices
+corr = zeros(size(P));
 off_diag_cov_sums = reshape(sum(abs(P), 1), size(P, 2), size(P, 3));
 for k = 1:NUM_ITER
     off_diag_cov_sums(:,k) = off_diag_cov_sums(:,k) - abs(diag(P(:,:,k)));
+    corr(:,:,k) = myCovToCorr(P(:,:,k));
 end
 
 results = zeros(length(chosen_indices), 8);

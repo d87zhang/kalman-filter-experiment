@@ -156,3 +156,14 @@ ylabel('Some estimate..');
 legend('show');
 
 saveas(gcf, strcat(tempFolderName, 'Some estimates vs time.jpg'));
+
+%% imagesc corr matrix
+% take a certain percentile for clim
+iter = 2000;
+
+corr_mat = corr(:,:,iter);
+
+figure('units','normalized','outerposition',[0 0 1 1]);
+imagesc(corr_mat, [-1, 1]);
+colorbar;
+title(sprintf('Correlation matrix at iteration %d', iter));
