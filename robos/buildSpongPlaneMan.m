@@ -37,5 +37,8 @@ function robot = buildSpongPlaneMan(s, L1, L2)
                                   -(L1 + L2 + 0.5),(L1 + L2 + 0.5), -0.5,0.5]};
     
     % set dynamic parameters
-    setSpongPlaneParams(robot, s, L1, L2);
+    % use frame i for reference frame for center of mass i, 'cause the other
+    % way is broken
+%     setSpongPlaneParams(robot, s, L1, L2);
+    setFullRoboParams(robot, s);
 end

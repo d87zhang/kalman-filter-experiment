@@ -11,8 +11,12 @@ SPONG_PLANE_MAN_SETUP.m = 2;
 L1 = 2;
 L2 = 2;
 SPONG_PLANE_MAN_SETUP.robot_build_func = @(s)(buildSpongPlaneMan(s, L1, L2));
-SPONG_PLANE_MAN_SETUP.robot_set_params_func = @(robot, s)(setSpongPlaneParams(robot, s, L1, L2));
-SPONG_PLANE_MAN_SETUP.robot_set_param_func = @(robot, s_value, idx)(setSpongPlaneParam(robot, s_value, idx, L1, L2));
+% use frame i for reference frame for center of mass i, 'cause the other
+% way is broken
+% SPONG_PLANE_MAN_SETUP.robot_set_params_func = @(robot, s)(setSpongPlaneParams(robot, s, L1, L2));
+% SPONG_PLANE_MAN_SETUP.robot_set_param_func = @(robot, s_value, idx)(setSpongPlaneParam(robot, s_value, idx, L1, L2));
+SPONG_PLANE_MAN_SETUP.robot_set_params_func = @setFullRoboParams;
+SPONG_PLANE_MAN_SETUP.robot_set_param_func = @setFullRoboParam;
 
 SPONG_PLANE_MAN_SETUP.s_actual = zeros(SPONG_PLANE_MAN_SETUP.n, 1);
 SPONG_PLANE_MAN_SETUP.s_actual(1:10) = [1, 1, 1, 1, ...
