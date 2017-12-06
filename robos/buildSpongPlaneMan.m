@@ -1,10 +1,9 @@
-function robot = buildPlaneManFull(s)
+function robot = buildSpongPlaneMan(s, L1, L2)
     % Returns a SerialLink robot built with the parameters from the given
     % state vector s (with 10n parameters)
+    % note: that s(2) represents l_c1 in Spong's book p.260 and s(12)
+    % similarly represents l_c2
     
-    L1 = 2;
-    L2 = 2;
-
     links(1) = Link('d', 0, 'a', L1, 'alpha', 0);
     links(2) = Link('d', 0, 'a', L2, 'alpha', 0);
 
@@ -29,14 +28,14 @@ function robot = buildPlaneManFull(s)
     links(2).Jm = LINK_MOTOR_INERTIA;
 
     robot = SerialLink(links, 'name', 'planeMan');
-
+    
 %     robot.gravity = [0 9.81 0]; % gravity goes in the -y direction (this
 %     is prolly wrong)
     robot.gravity = [0 0 0]; % ignore gravity
     robot.qlim = [0 pi; 0 3/4*pi];
     robot.plotopt = {'workspace' [-(L1 + L2 + 0.5),(L1 + L2 + 0.5), ...
                                   -(L1 + L2 + 0.5),(L1 + L2 + 0.5), -0.5,0.5]};
-
+    
     % set dynamic parameters
-    setFullRoboParams(robot, s);
+    setSpongPlaneParams(robot, s, L1, L2);
 end

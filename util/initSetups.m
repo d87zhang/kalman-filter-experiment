@@ -8,17 +8,18 @@ clear SPONG_PLANE_MAN_SETUP;
 SPONG_PLANE_MAN_SETUP.NUM_JOINTS = 2;
 SPONG_PLANE_MAN_SETUP.n = 2 * 10;
 SPONG_PLANE_MAN_SETUP.m = 2;
-SPONG_PLANE_MAN_SETUP.robot_build_func = @buildPlaneManFull;
-SPONG_PLANE_MAN_SETUP.robot_set_params_func = @setFullRoboParams;
-SPONG_PLANE_MAN_SETUP.robot_set_param_func = @setFullRoboParam;
+L1 = 2;
+L2 = 2;
+SPONG_PLANE_MAN_SETUP.robot_build_func = @(s)(buildSpongPlaneMan(s, L1, L2));
+SPONG_PLANE_MAN_SETUP.robot_set_params_func = @(robot, s)(setSpongPlaneParams(robot, s, L1, L2));
+SPONG_PLANE_MAN_SETUP.robot_set_param_func = @(robot, s_value, idx)(setSpongPlaneParam(robot, s_value, idx, L1, L2));
 
 SPONG_PLANE_MAN_SETUP.s_actual = zeros(SPONG_PLANE_MAN_SETUP.n, 1);
 SPONG_PLANE_MAN_SETUP.s_actual(1:10) = [1, 1, 1, 1, ...
                                         0, 0, 1, 0, 0, 0];
 SPONG_PLANE_MAN_SETUP.s_actual(11:20) = [1, 1, 1, 1, ...
                                          0, 0, 1, 0, 0, 0];
-% TODO test that y, z, CoM are non zz I do not contribute (0 H)?
-SPONG_PLANE_MAN_SETUP.assumed_measurement_sigma = [2, 2]; % TODO find a suitable value
+SPONG_PLANE_MAN_SETUP.assumed_measurement_sigma = [6, 4];
 
 SPONG_PLANE_MAN_SETUP.traj_coef = traj_coef_file.ff_coef_plane;
 

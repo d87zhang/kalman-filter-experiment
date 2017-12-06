@@ -1,6 +1,9 @@
 function setFullRoboParams(robot, s)
     % change the whole set of params for a robot specified with 10n
     % parameters
+    % Expects s to be composed of [m, m * center of mass, I] where center
+    % of mass for link i is measured from frame i
+    
     assert(mod(length(s),10) == 0);
     for idx = 1:(length(s)/10)
         base_idx = 10 * (idx-1);

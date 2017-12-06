@@ -1,5 +1,8 @@
 function setFullRoboParam(robot, s_value, idx)
     % Change one param for a robot specified with 10n parameters
+    % Expects s to be composed of [m, m * center of mass, I] where center
+    % of mass for link i is measured from frame i
+    
     joint_idx = ceil(idx/10);
     param_idx = mod(idx, 10);
     
