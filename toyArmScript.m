@@ -27,8 +27,8 @@ P_0 = zeros(1, n);
 s_hat_1 = s_actual;
 
 % chosen_indices = [6,11,21,15:20,25:30]; % parameters being estimated
-chosen_indices = 1:n; % parameters being estimated
-% chosen_indices = [6, 16, 27];
+% chosen_indices = 1:n; % parameters being estimated
+chosen_indices = [1, 2, 7, 11, 12, 17];
 % chosen_indices = [2:10, 12:20 ,22:30]; % parameters being estimated
 guess_factors = containers.Map(chosen_indices, 1.5 * ones(size(chosen_indices)));
 
@@ -286,6 +286,7 @@ for k = 1:NUM_ITER
     off_diag_cov_sums(:,k) = off_diag_cov_sums(:,k) - abs(diag(P(:,:,k)));
     corr(:,:,k) = myCovToCorr(P(:,:,k));
 end
+corr(isnan(corr)) = 0; % get rid of NaN's resulted from parameters with 0 variance
 
 results = zeros(length(chosen_indices), 8);
 init_guesses = strings(length(chosen_indices), 1);
