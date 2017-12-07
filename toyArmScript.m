@@ -61,10 +61,10 @@ P_0 = diag(P_0);
 
 %% trajectory gen and simulate robot
 % fund_periods = [6     4     5     7     3     8];
-fund_periods = 5 * ones(1, NUM_JOINTS);
-t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
-
-[q, qd, qdd] = genFFS(traj_coef, t, fund_periods, t_offsets);
+% % fund_periods = 5 * ones(1, NUM_JOINTS);
+% t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
+% 
+% [q, qd, qdd] = genFFS(traj_coef, t, fund_periods, t_offsets);
 
 % q = zeros(size(q));
 % qd = zeros(size(qd));
@@ -82,16 +82,16 @@ t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
 % % q(:,2) = 0.5;
 
 % generate quintic splines
-% rng(666);
-% t_sites = 0:2:t_f;
-% NUM_SITES = length(t_sites);
-% 
-% MAX_Y = 2.5;
-% MAX_YD = 6;
-% MAX_YDD = 20;
-% q_spec = MAX_Y*rand(NUM_SITES, NUM_JOINTS) - MAX_Y/2;
-% qd_spec = MAX_YD*rand(NUM_SITES, NUM_JOINTS) - MAX_YD/2;
-% qdd_spec = MAX_YDD*rand(NUM_SITES, NUM_JOINTS) - MAX_YDD/2;
+rng(666);
+t_sites = 0:2:t_f;
+NUM_SITES = length(t_sites);
+
+MAX_Y = 2.5;
+MAX_YD = 6;
+MAX_YDD = 20;
+q_spec = MAX_Y*rand(NUM_SITES, NUM_JOINTS) - MAX_Y/2;
+qd_spec = MAX_YD*rand(NUM_SITES, NUM_JOINTS) - MAX_YD/2;
+qdd_spec = MAX_YDD*rand(NUM_SITES, NUM_JOINTS) - MAX_YDD/2;
 
 % modify boundary condition
 % [~, t_begin_idx] = ismember(t_sites(1), t);
@@ -100,7 +100,7 @@ t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
 % qd_spec(1,:) = qd(t_begin_idx,:);
 % qdd_spec(1,:) = qdd(t_begin_idx,:);
 
-% [q, qd, qdd] = quinticSpline(q_spec, qd_spec, qdd_spec, t_sites, t);
+[q, qd, qdd] = quinticSpline(q_spec, qd_spec, qdd_spec, t_sites, t);
 % [q_spl, qd_spl, qdd_spl] = quinticSpline(q_spec, qd_spec, qdd_spec, ...
 %                                          t_sites, t(t_begin_idx:end));
 
