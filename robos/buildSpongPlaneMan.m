@@ -1,4 +1,4 @@
-function robot = buildSpongPlaneMan(s, L1, L2)
+function robot = buildSpongPlaneMan(s, L1, L2, robot_set_params_func)
     % Returns a SerialLink robot built with the parameters from the given
     % state vector s (with 10n parameters)
     % note: that s(2) represents l_c1 in Spong's book p.260 and s(12)
@@ -40,5 +40,5 @@ function robot = buildSpongPlaneMan(s, L1, L2)
     % use frame i for reference frame for center of mass i, 'cause the other
     % way is broken
 %     setSpongPlaneParams(robot, s, L1, L2);
-    setFullRoboParams(robot, s);
+    robot_set_params_func(robot, s);
 end

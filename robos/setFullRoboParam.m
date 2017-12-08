@@ -1,7 +1,20 @@
-function setFullRoboParam(robot, s_value, idx)
+function setFullRoboParam(robot, s_value, idx, varargin)
     % Change one param for a robot specified with 10n parameters
     % Expects s to be composed of [m, m * center of mass, I] where center
     % of mass for link i is measured from frame i
+    % varargin - one optional boolean variable indicating if the 2nd to 4th
+    % state variables should be treated as simply center of mass instead of
+    % mass * center of mass
+    
+    switch nargin - 3
+        case 0
+            using_mass_times_CoM = true;
+        case 1
+            using_mass_times_CoM = ~varargin{1};
+        otherwise
+            warning('setFullRoboParams() only accepts at most 1 varargin');
+            assert(false);
+    end
     
     joint_idx = ceil(idx/10);
     param_idx = mod(idx, 10);
@@ -10,21 +23,30 @@ function setFullRoboParam(robot, s_value, idx)
         % it's a mass
         old_mass = robot.links(joint_idx).m;
         robot.links(joint_idx).m = s_value;
-        % also need to change the center of masses...
-        if s_value ~= 0
-            robot.links(joint_idx).r = robot.links(joint_idx).r ...
-                * old_mass / s_value;
-        else
-            robot.links(joint_idx).r = zeros(size(robot.links(joint_idx).r));
+        
+        if using_mass_times_CoM
+            % also need to change the center of masses...
+            if s_value ~= 0
+                robot.links(joint_idx).r = robot.links(joint_idx).r ...
+                    * old_mass / s_value;
+            else
+                robot.links(joint_idx).r = zeros(size(robot.links(joint_idx).r));
+            end
         end
             
     elseif param_idx > 1 && param_idx < 5
-        % it's a mass * center of mass
-        if robot.links(joint_idx).m ~= 0
-            robot.links(joint_idx).r(param_idx - 1) = ...
-                s_value / robot.links(joint_idx).m;
+        % it's center of mass related
+        if using_mass_times_CoM
+            % it's a mass * center of mass
+            if robot.links(joint_idx).m ~= 0
+                robot.links(joint_idx).r(param_idx - 1) = ...
+                    s_value / robot.links(joint_idx).m;
+            else
+                robot.links(joint_idx).r(param_idx - 1) = 0;
+            end
         else
-            robot.links(joint_idx).r(param_idx - 1) = 0;
+            % it's just center of mass
+            robot.links(joint_idx).r(param_idx - 1) = s_value;
         end
             
     else
