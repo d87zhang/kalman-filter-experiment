@@ -1,6 +1,6 @@
 %% initialize
 dt = 0.005;
-t_f = 10;
+t_f = 4;
 NUM_ITER = t_f / dt + 1;
 t = linspace(0, t_f, NUM_ITER)';
 
@@ -16,6 +16,10 @@ robot_set_param_func = curr_setup.robot_set_param_func;
 assumed_measurement_sigma = curr_setup.assumed_measurement_sigma;
 s_actual = curr_setup.s_actual;
 traj_coef = curr_setup.traj_coef;
+
+% test only measuring a subset of torques
+m = 1;
+assumed_measurement_sigma = assumed_measurement_sigma(1:m);
 
 % measurement_sigma = assumed_measurement_sigma;
 measurement_sigma = zeros(1, m);
@@ -60,8 +64,8 @@ P_0 = diag(P_0);
 [sf2_y, sf2_Fs] = audioread('soundeffects\villagercreation.wav');
 
 %% trajectory gen and simulate robot
-% fund_periods = [6     4     5     7     3     8];
-% % fund_periods = 5 * ones(1, NUM_JOINTS);
+% % fund_periods = [6     4     5     7     3     8];
+% fund_periods = 5 * ones(1, NUM_JOINTS);
 % t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
 % 
 % [q, qd, qdd] = genFFS(traj_coef, t, fund_periods, t_offsets);
@@ -72,14 +76,28 @@ P_0 = diag(P_0);
 % qdd = ones(size(qdd));
 % qdd(:,2) = 0.5 * qdd(:,2);
 
-% Generate constant spinning?
-% q(:,4:end) = zeros(size(q(:,4:end)));
-% qd = zeros(size(qd));
-% qdd = zeros(size(qdd));
-% q(:,1) = 0.5 * t.^2;
-% qd(:,1) = t;
-% qdd(:,1) = ones(size(qdd(:,1)));
-% % q(:,2) = 0.5;
+% ==============
+% % Some kind of special traj
+% % joint 2 is not moving
+% % q(:,2) = zeros(size(q(:,2)));
+% q(:,2) = pi * ones(size(q(:,2)));
+% qd(:,2) = zeros(size(qd(:,2)));
+% qdd(:,2) = zeros(size(qdd(:,2)));
+% 
+% % Add a component to q1 and its derivatives in order to up qdd1 by a
+% % constant amount, so that it stays above or below zero
+% % First scale down the existing trajectory though so the required constant
+% % gain is smaller.
+% scale_facotr = 1/8;
+% q(:,1) = scale_facotr * q(:,1);
+% qd(:,1) = scale_facotr * qd(:,1);
+% qdd(:,1) = scale_facotr * qdd(:,1);
+% 
+% qdd1_constant_gain = -20 * scale_facotr;
+% q(:,1) = q(:,1) + qdd1_constant_gain * 0.5 * t.^2;
+% qd(:,1) = qd(:,1) + qdd1_constant_gain * t;
+% qdd(:,1) = qdd(:,1) + qdd1_constant_gain;
+% ==============
 
 % generate quintic splines
 rng(666);

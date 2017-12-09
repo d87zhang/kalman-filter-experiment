@@ -126,8 +126,8 @@ title('Variances vs time');
 figure('units','normalized','outerposition',[0 0 1 1]); hold on;
 
 % param_ids_of_interest = chosen_indices;
-param_ids_of_interest = [27, 16, 6];
-for i = 1:1
+param_ids_of_interest = [12];
+for i = 1:m
     for j = param_ids_of_interest
         plot(t, reshape(H(i,j,:), 1, size(H, 3)), ...
             'DisplayName', sprintf('H(%d,%d)', i, j));
