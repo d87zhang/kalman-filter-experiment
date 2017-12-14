@@ -34,30 +34,6 @@ simple_ff_coef(:,1:end-1) = normrnd(1, 0.15, num_joints, 2*num_harmonics) .* mea
 
 save('coef.mat', 'simple_ff_coef', '-append');
 
-%% see how far torque predictions differ..
-s_hat_file = matfile('s_hat_vanilla.mat');
-s_hat_test = s_hat_file.s_hat;
-
-s_est = s_hat_test(end,:);
-robot_est = buildPuma(s_est);
-
-torque_est = zeros(NUM_ITER, size(torque, 2));
-for k = 1:NUM_ITER
-    torque_est(k,:) = inverseDynamics(robot_est, q(k,:), qd(k,:), qdd(k,:));
-end
-residual_est = torque_est - torque;
-
-figure; hold on
-for idx = 1:size(residual_est, 2)
-    plot(t, residual_est(:,idx), 'DisplayName', sprintf('residual for torque %d', idx));
-end
-
-title('Residual vs. time');
-xlabel('Time(s)');
-ylabel('Residual torque(N*m)');
-
-legend('show');
-
 %% make trajectory flat at the beginning
 flat_ending_idx = 2.5/dt + 1;
 q(1:flat_ending_idx, :) = repmat(q(flat_ending_idx, :), flat_ending_idx, 1);
@@ -125,8 +101,8 @@ title('Variances vs time');
 %% plotting part of H
 figure('units','normalized','outerposition',[0 0 1 1]); hold on;
 
-% param_ids_of_interest = chosen_indices;
-param_ids_of_interest = [12];
+param_ids_of_interest = chosen_indices;
+
 for i = 1:m
     for j = param_ids_of_interest
         plot(t, reshape(H(i,j,:), 1, size(H, 3)), ...
@@ -138,6 +114,25 @@ legend('show');
 title('Some H values');
 
 saveas(gcf, strcat(tempFolderName, 'Some H values.jpg'));
+
+%% Plot corr value
+figure('units','normalized','outerposition',[0 0 1 1]); hold on;
+
+for i = 1:m
+    for j = param_ids_of_interest
+        if j == i
+            continue;
+        end
+        plot(t, reshape(corr(i,j,:), 1, size(corr, 3)), ...
+            'DisplayName', sprintf('corr(%d,%d)', i, j));
+    end
+end
+
+legend('show');
+title('Corr values vs time');
+ylim([-1, 1]);
+
+saveas(gcf, strcat(tempFolderName, 'Corr values vs time.jpg'));
 
 %% Plot some estimates
 figure('units','normalized','outerposition',[0 0 1 1]); hold on

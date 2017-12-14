@@ -3,6 +3,9 @@ addpath('fooling-code');
 addpath('control');
 addpath('util');
 addpath('robos');
+addpath('scripts');
+addpath('traj-gen');
+addpath('tests');
 
 initSetups
 
