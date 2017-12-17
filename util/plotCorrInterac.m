@@ -1,8 +1,10 @@
-function plotCorrInterac(corr)
+function plotCorrInterac(corr, folder_name_to_save)
     % Create a colour plot of the input corr matrix, using a slider to
-    % control which timestep to show
+    % control which timestep to show. Optionally saves figure to folder
     % Input args:
     %   corr - a (n,n,num_iter) thing where the 3rd dim is the timestep
+    %   folder_name_to_save - folder name. Provide this if you want to save
+    %                         the folder
 
     NUM_ITER = size(corr, 3);
     
@@ -25,6 +27,10 @@ function plotCorrInterac(corr)
                      'min',1,'max',NUM_ITER,'val',init_k,...
                      'sliderstep',[1/(NUM_ITER-1) 1/(NUM_ITER-1)],...
                      'callback',{@sl_call,S});
+    
+    if exist('folder_name_to_save', 'var')
+        saveas(gcf, strcat(folder_name_to_save, 'corr_matrix.fig'));
+    end
                  
     function [] = sl_call(varargin)
         % Callback for the slider.

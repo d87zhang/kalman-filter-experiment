@@ -18,7 +18,7 @@ s_actual = curr_setup.s_actual;
 traj_coef = curr_setup.traj_coef;
 
 % test only measuring a subset of torques
-m = 1;
+% m = 1;
 assumed_measurement_sigma = assumed_measurement_sigma(1:m);
 
 % measurement_sigma = assumed_measurement_sigma;
@@ -31,23 +31,35 @@ P_0 = zeros(1, n);
 s_hat_1 = s_actual;
 
 % chosen_indices = 1:n; % parameters being estimated
-chosen_indices = [1, 2]; % parameters being estimated
+chosen_indices = [1, 2, 7, 11, 12, 17]; % parameters being estimated
 
 guess_factors = containers.Map(chosen_indices, 1.5 * ones(size(chosen_indices)));
-% TODO randomize guess_factors a bit, with bounds
-% guess_factors(1) = 2; % TODO test if est still accurate
-% guess_factors(2) = 2; % TODO test if est still accurate
+% randomize guess_factors a bit, with bounds
+rng(123);
+for idx = chosen_indices
+    rand_range = 0.6;
+    if rand() > 0.5
+        % turn overest to underest and vice versa
+        guess_factors(idx) = 1 - (guess_factors(idx) - 1);
+    end
+    guess_factors(idx) = guess_factors(idx) + rand_range * rand() - rand_range/2;
+end
+% guess_factors(1) = 2;
+% guess_factors(2) = 2;
 
 for idx = chosen_indices
     P_0(idx) = 1;
     s_hat_1(idx) = guess_factors(idx) * s_hat_1(idx);
 
+    % hardcoding
+    P_0(idx) = 10;
+    
     % auto tuning
-    if s_actual(idx) == 0 
-        P_0(idx) = 1;
-    else
-        P_0(idx) = (s_hat_1(idx) - s_actual(idx))^2;
-    end
+%     if s_actual(idx) == 0 
+%         P_0(idx) = 1;
+%     else
+%         P_0(idx) = (s_hat_1(idx) - s_actual(idx))^2;
+%     end
 end
 
 % fine tuning P_0...
@@ -55,6 +67,10 @@ end
 % P_0(2) = 0.25;
 
 P_0 = diag(P_0);
+
+Q = 2 * 1e-3 * P_0./P_0;
+Q(isnan(Q)) = 0; % get rid of NaN from dividing by 0
+% Q = zeros(size(P_0));
 
 % this is so important :)
 [sf1_y, sf1_Fs] = audioread('soundeffects\militarycreation.wav');
@@ -67,11 +83,30 @@ P_0 = diag(P_0);
 % 
 % [q, qd, qdd] = genFFS(traj_coef, t, fund_periods, t_offsets);
 
+% q = repmat(q(2.5 * 200:3 * 200,:),50,1);
+% q = q(1:numel(t),:);
+% qd = repmat(qd(2.5 * 200:3 * 200,:),50,1);
+% qd = qd(1:numel(t),:);
+% qdd = repmat(qdd(2.5 * 200:3 * 200,:),50,1);
+% qdd = qdd(1:numel(t),:);
+
 % ==============
 % Some kind of special traj
-a1 = [1, 1.5];
-b1 = [0, 0];
-[ q, qd, qdd ] = linearTraj(a1, b1, t);
+% a1 = [1, 1.5];
+% b1 = [0, 0];
+% a2 = [1.5, -0.5];
+% b2 = [2, 1];
+% a3 = [-2, -0.75];
+% b3 = [-1, 0];
+% a4 = [0.5, -1];
+% b4 = [0.5, -1];
+% 
+% [ q2, qd2, qdd2 ] = linearTraj(a1, b1, t);
+% 
+% cat_point = round(length(t) /2);
+% q(cat_point:end, :) = q2(cat_point:end, :);
+% qd(cat_point:end, :) = qd2(cat_point:end, :);
+% qdd(cat_point:end, :) = qdd2(cat_point:end, :);
 
 % % q(:,2) = zeros(size(q(:,2)));
 % q(:,2) = pi * ones(size(q(:,2)));
@@ -94,34 +129,35 @@ b1 = [0, 0];
 % ==============
 
 % generate quintic splines
-% rng(666);
-% t_sites = 0:2:t_f;
-% NUM_SITES = length(t_sites);
-% 
-% MAX_Y = 2.5;
-% MAX_YD = 6;
-% MAX_YDD = 20;
-% q_spec = MAX_Y*rand(NUM_SITES, NUM_JOINTS) - MAX_Y/2;
-% qd_spec = MAX_YD*rand(NUM_SITES, NUM_JOINTS) - MAX_YD/2;
-% qdd_spec = MAX_YDD*rand(NUM_SITES, NUM_JOINTS) - MAX_YDD/2;
-% 
-% % modify boundary condition
-% % [~, t_begin_idx] = ismember(t_sites(1), t);
-% % assert(all(t_begin_idx));
-% % q_spec(1,:) = q(t_begin_idx,:);
-% % qd_spec(1,:) = qd(t_begin_idx,:);
-% % qdd_spec(1,:) = qdd(t_begin_idx,:);
-% 
-% [q, qd, qdd] = quinticSpline(q_spec, qd_spec, qdd_spec, t_sites, t);
-% % [q_spl, qd_spl, qdd_spl] = quinticSpline(q_spec, qd_spec, qdd_spec, ...
-% %                                          t_sites, t(t_begin_idx:end));
-% 
-% % q(t_begin_idx:end,:) = q_spl;
-% % qd(t_begin_idx:end,:) = qd_spl;
-% % qdd(t_begin_idx:end,:) = qdd_spl;
+rng(666);
+t_sites = 0:2:t_f;
+NUM_SITES = length(t_sites);
 
+MAX_Y = 2.5;
+MAX_YD = 6;
+MAX_YDD = 20;
+q_spec = MAX_Y*rand(NUM_SITES, NUM_JOINTS) - MAX_Y/2;
+qd_spec = MAX_YD*rand(NUM_SITES, NUM_JOINTS) - MAX_YD/2;
+qdd_spec = MAX_YDD*rand(NUM_SITES, NUM_JOINTS) - MAX_YDD/2;
+
+% modify boundary condition
+% [~, t_begin_idx] = ismember(t_sites(1), t);
+% assert(all(t_begin_idx));
+% q_spec(1,:) = q(t_begin_idx,:);
+% qd_spec(1,:) = qd(t_begin_idx,:);
+% qdd_spec(1,:) = qdd(t_begin_idx,:);
+
+[q, qd, qdd] = quinticSpline(q_spec, qd_spec, qdd_spec, t_sites, t);
+% [q_spl, qd_spl, qdd_spl] = quinticSpline(q_spec, qd_spec, qdd_spec, ...
+%                                          t_sites, t(t_begin_idx:end));
+
+% q(t_begin_idx:end,:) = q_spl;
+% qd(t_begin_idx:end,:) = qd_spl;
+% qdd(t_begin_idx:end,:) = qdd_spl;
+
+%% generate torques and measurements
 % Generate required torque for this trajectory
-torque = robot.rne([q, qd, qdd], robot.gravity, zeros(1,6));
+
 % [torque, base_wrench] = robot.rne([q, qd, qdd], robot.gravity, zeros(1,6));
 
 % torque = zeros(NUM_ITER, NUM_JOINTS);
@@ -131,12 +167,13 @@ torque = robot.rne([q, qd, qdd], robot.gravity, zeros(1,6));
 %                                            zeros(1,6));
 %     torque(k,:) = temp_torque;
 % end
-
-%% generate measurements
+torque = robot.rne([q, qd, qdd], robot.gravity, zeros(1,6));
+rng(65535);
 genMeas;
 
 %% estimate parameters
 doTheEstimation;
+calcCorr;
 
 %% Plot results!
 folderName = 'C:\Users\Difei\Desktop\toyArm pics\currPlots\';
@@ -268,8 +305,6 @@ saveas(gcf, strcat(folderName, '6-P norm.jpg'));
 
 %% Generate textual results
 % ========================
-calcCorr;
-
 off_diag_cov_sums = reshape(sum(abs(P), 1), size(P, 2), size(P, 3));
 for k = 1:NUM_ITER
     off_diag_cov_sums(:,k) = off_diag_cov_sums(:,k) - abs(diag(P(:,:,k)));
@@ -300,10 +335,18 @@ for i = 1:length(chosen_indices)
                     final_perc_errs(i), ... % 7
                     off_diag_cov_sums(idx,end)]; % 8
 end
-additional_info = zeros(length(chosen_indices), 2);
+additional_info = zeros(length(chosen_indices), 4);
 additional_info(:,1) = results(:,1);
 for i = 1:size(additional_info, 1)
-    additional_info(i,2) = guess_factors(additional_info(i,1));
+    idx = chosen_indices(i);
+    
+    P_0_value = diag(P_0);
+    P_0_value = P_0_value(idx);
+    Q_value = diag(Q);
+    Q_value = Q_value(idx);
+    additional_info(i,2:end) = [guess_factors(idx), ...
+                                P_0_value, ...
+                                Q_value];
 end
 
 resultsTable1 = table(results(:,1), results(:,3), ...
@@ -312,9 +355,10 @@ resultsTable1.Properties.VariableNames = {'stateId', ...
     'actualVal', 'final_P_val', ...
     'avg_rel_err_perc', 'final_perc_err', ...
     'final_off_diag_cov_sum'};
-additional_info_table = table(additional_info(:,1), additional_info(:,2));
+additional_info_table = table(additional_info(:,1), additional_info(:,2), ...
+                              additional_info(:,3), additional_info(:,4));
 additional_info_table.Properties.VariableNames = {'stateId', ...
-    'init_guess_factor'};
+    'init_guess_factor', 'P_0_value', 'Q_value'};
 
 resultsTable1Str = evalc('disp(resultsTable1)');
 additional_info_table_str = evalc('disp(additional_info_table)');
@@ -366,7 +410,7 @@ fprintf(resultsFile, additional_info_table_str);
 fprintf(resultsFile, '*init_guess_factor expresses the factor (init_guess_val / actual_val).\n');
 
 fprintf(resultsFile, '\n');
-fprintf(resultsFile, 'EST_CENTER_OF_MASS_ALONE: %s', BOOL_TO_STRING{EST_CENTER_OF_MASS_ALONE + 1});
+fprintf(resultsFile, 'EST_CENTER_OF_MASS_ALONE: %s\n', BOOL_TO_STRING{EST_CENTER_OF_MASS_ALONE + 1});
 
 % fprintf(resultsFile, '\n');
 % fprintf(resultsFile, '================= Helper stats =================\n');

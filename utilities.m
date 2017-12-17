@@ -89,7 +89,7 @@ none_contributors_idx = list_params(none_contributors_mask);
 %% plotting variances (on-diagonal P values)
 figure('units','normalized','outerposition',[0 0 1 1]); hold on;
 
-for idx = param_ids_of_interest
+for idx = chosen_indices
     plot(t, reshape(P(idx, idx, :), 1, size(P, 3)), 'DisplayName', getParamDescript(idx));
 end
 
@@ -98,10 +98,13 @@ xlabel('Time(s)');
 ylabel('Variance');
 title('Variances vs time');
 
+saveas(gcf, strcat(tempFolderName, 'On diagonal P values.fig'));
+
 %% plotting part of H
 figure('units','normalized','outerposition',[0 0 1 1]); hold on;
 
-param_ids_of_interest = chosen_indices;
+% param_ids_of_interest = chosen_indices;
+param_ids_of_interest = [7];
 
 for i = 1:m
     for j = param_ids_of_interest
@@ -118,9 +121,10 @@ saveas(gcf, strcat(tempFolderName, 'Some H values.jpg'));
 %% Plot corr value
 figure('units','normalized','outerposition',[0 0 1 1]); hold on;
 
-for i = 1:m
-    for j = param_ids_of_interest
-        if j == i
+for i = chosen_indices
+    for j = chosen_indices
+        % only examine pairs where j > i
+        if j <= i
             continue;
         end
         plot(t, reshape(corr(i,j,:), 1, size(corr, 3)), ...
