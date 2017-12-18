@@ -5,6 +5,7 @@ NUM_ITER = t_f / dt + 1;
 t = linspace(0, t_f, NUM_ITER)';
 
 curr_setup = SPONG_PLANE_MAN_SETUP;
+% curr_setup = SIMPLE_PLANE_MAN_SETUP;
 % curr_setup = DH_PUMA_EST_3L_SETUP;
 
 n = curr_setup.n; % dimension of s

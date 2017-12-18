@@ -61,10 +61,10 @@ DH_PUMA_EST_3L_SETUP.traj_coef = traj_coef_file.ff_coef2;
 clear SIMPLE_PLANE_MAN_SETUP;
 
 SIMPLE_PLANE_MAN_SETUP.NUM_JOINTS = 2;
-SIMPLE_PLANE_MAN_SETUP.n = 2 * 10;
+SIMPLE_PLANE_MAN_SETUP.n = 2;
 SIMPLE_PLANE_MAN_SETUP.m = 2;
 
-S_SPEC = 'MoI';
+S_SPEC = 'mass';
 SIMPLE_PLANE_MAN_SETUP.robot_build_func = @(s)(buildPlaneMan(s, S_SPEC));
 SIMPLE_PLANE_MAN_SETUP.robot_set_params_func = @(robot, s)(setPlaneParams(robot, s, S_SPEC));
 SIMPLE_PLANE_MAN_SETUP.robot_set_param_func = @(robot, s_value, idx)(setPlaneParam(robot, s_value, idx, S_SPEC));
