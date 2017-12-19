@@ -4,6 +4,11 @@ t_f = 10;
 NUM_ITER = t_f / dt + 1;
 t = linspace(0, t_f, NUM_ITER)';
 
+% rng seeds
+guess_rng_seed = 123;
+s_actual_rng_seed = 321;
+quintic_traj_rng_seed = 666;
+
 curr_setup = SPONG_PLANE_MAN_SETUP;
 % curr_setup = SIMPLE_PLANE_MAN_SETUP;
 % curr_setup = DH_PUMA_EST_3L_SETUP;
@@ -25,8 +30,6 @@ assumed_measurement_sigma = assumed_measurement_sigma(1:m);
 % measurement_sigma = assumed_measurement_sigma;
 measurement_sigma = zeros(1, m);
 
-robot = robot_build_func(s_actual);
-
 % Set up initial conditions (initial guess and P_0)
 P_0 = zeros(1, n);
 s_hat_1 = s_actual;
@@ -36,7 +39,7 @@ chosen_indices = [1, 2, 7, 11, 12, 17]; % parameters being estimated
 
 guess_factors = containers.Map(chosen_indices, 1.5 * ones(size(chosen_indices)));
 % randomize guess_factors a bit, with bounds
-rng(123);
+rng(guess_rng_seed);
 for idx = chosen_indices
     rand_range = 0.6;
     if rand() > 0.5
@@ -72,6 +75,20 @@ P_0 = diag(P_0);
 Q = 2 * 1e-3 * P_0./P_0;
 Q(isnan(Q)) = 0; % get rid of NaN from dividing by 0
 % Q = zeros(size(P_0));
+
+% randomly perturb s_actual
+% rng(s_actual_rng_seed);
+% for i = 1:numel(chosen_indices)
+%     idx = chosen_indices(i);
+%     perturb_factor = 10^(2 * rand() - 1);
+%     s_actual(idx) = s_actual(idx) * perturb_factor;
+%     
+%     % automatically compensate by scaling P_0 and Q
+%     P_0(idx,idx) = P_0(idx,idx) * perturb_factor^2;
+%     Q(idx,idx) = Q(idx,idx) * perturb_factor^2;
+% end
+
+robot = robot_build_func(s_actual);
 
 % this is so important :)
 [sf1_y, sf1_Fs] = audioread('soundeffects\militarycreation.wav');
@@ -130,7 +147,7 @@ Q(isnan(Q)) = 0; % get rid of NaN from dividing by 0
 % ==============
 
 % generate quintic splines
-rng(666);
+rng(quintic_traj_rng_seed);
 t_sites = 0:2:t_f;
 NUM_SITES = length(t_sites);
 
@@ -382,30 +399,6 @@ fprintf(resultsFile, 'mean (absolute value) relative error: %f\n', ...
 fprintf(resultsFile, 'mean (absolute value) final relative error: %f\n', ...
         mean(abs(final_perc_errs_cleaned)) / 100);
 
-% some correlations
-fprintf(resultsFile, '\n');
-fprintf(resultsFile, 'correlation coef between mean_abs_rel_err and final_cov_sums: %f\n', ...
-        cleanAndGetCorr(mean_abs_rel_err, off_diag_cov_sums(chosen_indices, end)'));
-fprintf(resultsFile, 'correlation coef between mean_abs_err (not relative) and final_cov_sums: %f\n', ...
-        cleanAndGetCorr(mean_abs_rel_err .* abs(s_actual(chosen_indices))', off_diag_cov_sums(chosen_indices, end)'));
-
-final_P_on_diag = diag(P(:, :, end))';
-final_P_on_diag_rel = final_P_on_diag ./ diag(P_0)';
-final_P_on_diag_rel = final_P_on_diag_rel(chosen_indices);
-final_P_on_diag = final_P_on_diag(chosen_indices);
-
-fprintf(resultsFile, '\n');
-fprintf(resultsFile, 'correlation coef between mean_abs_rel_err and final on-diagonal P values (unnormalized): %f\n', ...
-        cleanAndGetCorr(mean_abs_rel_err, final_P_on_diag));
-fprintf(resultsFile, 'correlation coef between mean_abs_err (not relative) and-on diagonal P values (unnormalized): %f\n', ...
-        cleanAndGetCorr(mean_abs_rel_err .* abs(s_actual(chosen_indices))', final_P_on_diag));
-
-fprintf(resultsFile, '\n');
-fprintf(resultsFile, 'correlation coef between mean_abs_rel_err and final on-diagonal P values (relative to P_0): %f\n', ...
-        cleanAndGetCorr(mean_abs_rel_err, final_P_on_diag_rel));
-fprintf(resultsFile, 'correlation coef between mean_abs_err (not relative) and on-diagonal P values (relative to P_0): %f\n', ...
-        cleanAndGetCorr(mean_abs_rel_err .* abs(s_actual(chosen_indices))', final_P_on_diag_rel));
-
 fprintf(resultsFile, '\n');
 fprintf(resultsFile, additional_info_table_str);
 fprintf(resultsFile, '*init_guess_factor expresses the factor (init_guess_val / actual_val).\n');
@@ -413,8 +406,12 @@ fprintf(resultsFile, '*init_guess_factor expresses the factor (init_guess_val / 
 fprintf(resultsFile, '\n');
 fprintf(resultsFile, 'EST_CENTER_OF_MASS_ALONE: %s\n', BOOL_TO_STRING{EST_CENTER_OF_MASS_ALONE + 1});
 
-% fprintf(resultsFile, '\n');
-% fprintf(resultsFile, '================= Helper stats =================\n');
+fprintf(resultsFile, '\n');
+fprintf(resultsFile, '================= for Tester =================\n');
+
+fprintf(resultsFile, 'guess_rng_seed: %d\n', guess_rng_seed);
+fprintf(resultsFile, 's_actual_rng_seed: %d\n', s_actual_rng_seed);
+fprintf(resultsFile, 'quintic_traj_rng_seed: %d\n', quintic_traj_rng_seed);
 
 fclose(resultsFile);
 
@@ -465,4 +462,3 @@ xlabel('Time(s)');
 ylabel('Joint angle(rad/s^2)');
 legend('show');
 saveas(gcf, strcat(folderName, '10-qdd.jpg'));
-
