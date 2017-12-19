@@ -406,6 +406,26 @@ fprintf(resultsFile, '*init_guess_factor expresses the factor (init_guess_val / 
 fprintf(resultsFile, '\n');
 fprintf(resultsFile, 'EST_CENTER_OF_MASS_ALONE: %s\n', BOOL_TO_STRING{EST_CENTER_OF_MASS_ALONE + 1});
 
+% how accurately is the minimal param set (theta) estimated for Spong's 
+% 2-DoF plane man?
+if isequal(curr_setup, SPONG_PLANE_MAN_SETUP)
+    theta_actual = curr_setup.theta_func(s_actual);
+    theta_est = curr_setup.theta_func(s_hat(end,:));
+    
+    theta_rel_err = (theta_est - theta_actual) ./ abs(theta_actual);
+    theta_mean_rel_err = mean(abs(theta_rel_err));
+    theta_names = ["theta1", "theta2", "theta3", "theta4", "theta5"]';
+    
+    fprintf(resultsFile, '\n');
+    fprintf(resultsFile, 'Error in minimal parameter set theta (not %%):\n');
+    theta_rel_err_table = table(theta_names, theta_actual, theta_rel_err);
+	theta_rel_err_table_str = evalc('disp(theta_rel_err_table)');
+    % get rid of silly formatting stuff in the string..
+    theta_rel_err_table_str = regexprep(theta_rel_err_table_str, '(</strong>|<strong>)', '');
+    fprintf(resultsFile, theta_rel_err_table_str);
+    fprintf(resultsFile, 'mean theta relative error: %f', theta_mean_rel_err);
+end
+
 fprintf(resultsFile, '\n');
 fprintf(resultsFile, '================= for Tester =================\n');
 

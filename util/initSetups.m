@@ -11,8 +11,8 @@ EST_CENTER_OF_MASS_ALONE = true;
 SPONG_PLANE_MAN_SETUP.NUM_JOINTS = 2;
 SPONG_PLANE_MAN_SETUP.n = 2 * 10;
 SPONG_PLANE_MAN_SETUP.m = 2;
-L1 = 2;
-L2 = 2;
+SPONG_PLANE_MAN_SETUP.L1 = 2;
+SPONG_PLANE_MAN_SETUP.L2 = 2;
 % use frame i for reference frame for center of mass i, 'cause the other
 % way is broken
 % SPONG_PLANE_MAN_SETUP.robot_set_params_func = @(robot, s)(setSpongPlaneParams(robot, s, L1, L2));
@@ -20,7 +20,8 @@ L2 = 2;
 SPONG_PLANE_MAN_SETUP.robot_set_params_func = @(robot, s)(setFullRoboParams(robot, s, EST_CENTER_OF_MASS_ALONE));
 SPONG_PLANE_MAN_SETUP.robot_set_param_func = @(robot, s_value, idx)(setFullRoboParam(robot, s_value, idx, EST_CENTER_OF_MASS_ALONE));
 SPONG_PLANE_MAN_SETUP.robot_build_func = @(s)(buildSpongPlaneMan(...
-    s, L1, L2, SPONG_PLANE_MAN_SETUP.robot_set_params_func));
+    s, SPONG_PLANE_MAN_SETUP.L1, SPONG_PLANE_MAN_SETUP.L2, ...
+    SPONG_PLANE_MAN_SETUP.robot_set_params_func));
 
 SPONG_PLANE_MAN_SETUP.s_actual = zeros(SPONG_PLANE_MAN_SETUP.n, 1);
 SPONG_PLANE_MAN_SETUP.s_actual(1:10) = [1, -1, 1, 1, ...
@@ -30,6 +31,9 @@ SPONG_PLANE_MAN_SETUP.s_actual(11:20) = [1, -1, 1, 1, ...
 SPONG_PLANE_MAN_SETUP.assumed_measurement_sigma = [1, 0.5];
 
 SPONG_PLANE_MAN_SETUP.traj_coef = traj_coef_file.ff_coef_plane;
+
+SPONG_PLANE_MAN_SETUP.theta_func = @(s)(calcThetaForSpongPlaneMan(s, ...
+    EST_CENTER_OF_MASS_ALONE, SPONG_PLANE_MAN_SETUP.L1, SPONG_PLANE_MAN_SETUP.L2));
 
 clear DH_PUMA_EST_3L_SETUP;
 
