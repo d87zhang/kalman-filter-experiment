@@ -330,15 +330,12 @@ for k = 1:NUM_ITER
 end
 
 results = zeros(length(chosen_indices), 8);
-init_guesses = strings(length(chosen_indices), 1);
 final_perc_errs = zeros(1, length(chosen_indices));
 mean_abs_rel_err = zeros(1, length(chosen_indices));
 sum_abs_corr = zeros(1, n);
 
 for i = 1:length(chosen_indices)
     idx = chosen_indices(i);
-    init_guesses(i) = string(sprintf('%0.3f (%0.3f)', ...
-                                     s_hat_1(idx), s_hat_1(idx)/s_actual(idx)));
     
     diff = s_hat(:,idx) - s_actual(idx) * ones(size(s_hat(:,idx)));
     normalized_integral = abs(sum(abs(diff)) / s_actual(idx));
@@ -415,7 +412,7 @@ if isequal(curr_setup, SPONG_PLANE_MAN_SETUP)
     
     theta_rel_err = (theta_est - theta_actual) ./ abs(theta_actual);
     theta_mean_rel_err = mean(abs(theta_rel_err));
-    theta_names = ["theta1", "theta2", "theta3", "theta4", "theta5"]';
+    theta_names = ['theta1'; 'theta2'; 'theta3'; 'theta4'; 'theta5'];
     
     fprintf(resultsFile, '\n');
     fprintf(resultsFile, 'Error in minimal parameter set theta (not %%):\n');

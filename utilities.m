@@ -138,24 +138,6 @@ ylim([-1, 1]);
 
 saveas(gcf, strcat(tempFolderName, 'Corr values vs time.jpg'));
 
-%% Plot some estimates
-figure('units','normalized','outerposition',[0 0 1 1]); hold on
-
-% TODO plot normalized estimates?
-
-% for idx = param_ids_of_interest
-for idx = [27]
-    plot([0, t_f], s_actual(idx) * ones(1,2), 'DisplayName', ['true ', getParamDescript(idx)]);
-    plot(t, s_hat(:,idx), 'DisplayName', ['est ', getParamDescript(idx)]);
-end
-
-title('Some estimates vs. time');
-xlabel('Time(s)');
-ylabel('Some estimate..');
-legend('show');
-
-saveas(gcf, strcat(tempFolderName, 'Some estimates vs time.jpg'));
-
 %% imagesc corr matrix
 % take a certain percentile for clim
 iter = 2000;

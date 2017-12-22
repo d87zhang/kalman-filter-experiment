@@ -23,7 +23,7 @@ function [q, qd, qdd] = quinticSpline(q_spec, qd_spec, qdd_spec, t_sites, t)
     qdd = q;
     
     [~, t_indices] = ismember(t_sites, t);
-    assert(all(t_indices) && issorted(t_indices, 'ascend'));
+    assert(all(t_indices) && issorted(t_indices));
     
     for i = 1:NUM_SITES-1 % for each piece-wise polynomial
         t_start_idx = t_indices(i);
