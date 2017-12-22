@@ -14,11 +14,9 @@ function plotCorrInterac(corr, folder_name_to_save)
                   'numbertitle','off',...
                   'position',[20 80 630 630], ...
                   'resize','on');
-    S.k = 1:NUM_ITER;  % For plotting. TODO I think I understood this wrong     
     S.ax = axes('unit','pix',...
-                'position',[20 80 560 510]); % TODO update these things?
+                'position',[20 80 560 510]);
     S.im = imagesc(corr(:,:,init_k), [-1, 1]);
-%     S.cb = colorbar('position',[600 80 30 510]);
     S.cb = colorbar();
     S.title = title(get_title_str(init_k));
     S.sl = uicontrol('style','slide',...
@@ -34,12 +32,10 @@ function plotCorrInterac(corr, folder_name_to_save)
                  
     function [] = sl_call(varargin)
         % Callback for the slider.
-        % TODO change imagesc's CData field
         [h,S] = varargin{[1,3]};  % calling handle and data structure.
         k = round(get(h,'value'));
         S.im.CData = corr(:,:,k); % update data displayed
         S.title.String = get_title_str(k);
-%         set(S.LN,'ydata',S.k.^get(h,'value'))
     end
 
     function title_str = get_title_str(k)

@@ -35,8 +35,6 @@ toc
 % figure('units','normalized','outerposition',[0 0 1 1]);
 % movie(corr_frames, 1, 15);
 
-% TODO change colormap such that zero corresponds to white or something
-
 %% write the video to file
 vid_writer = VideoWriter([tempFolderName, 'corr over time.avi']);
 open(vid_writer);
