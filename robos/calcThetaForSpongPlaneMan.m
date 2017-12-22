@@ -20,6 +20,6 @@ function theta = calcThetaForSpongPlaneMan(s, EST_CENTER_OF_MASS_ALONE, L1, L2)
     theta(2) = m2*L1*lc2;
     theta(3) = m2*lc2^2 + I2;
     theta(4) = m1*lc1 + m2*L1;
-    theta(5) = m2*L2;
+    theta(5) = m2*lc2; % the textbook has a typo...
 end
 
