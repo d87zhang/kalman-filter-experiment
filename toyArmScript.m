@@ -9,6 +9,7 @@ guess_rng_seed = 123;
 s_actual_rng_seed = 321;
 quintic_traj_rng_seed = 666;
 
+% setups, see some defined in util/initSetups.m
 curr_setup = SPONG_PLANE_MAN_SETUP;
 % curr_setup = SIMPLE_PLANE_MAN_SETUP;
 % curr_setup = DH_PUMA_EST_3L_SETUP;
@@ -32,7 +33,7 @@ measurement_sigma = zeros(1, m);
 
 % Set up initial conditions (initial guess and P_0)
 P_0 = zeros(1, n);
-s_hat_1 = s_actual;
+s_hat_1 = zeros(size(s_actual));
 
 % chosen_indices = 1:n; % parameters being estimated
 chosen_indices = [1, 2, 7, 11, 12, 17]; % parameters being estimated
@@ -43,7 +44,7 @@ rng(guess_rng_seed);
 for idx = chosen_indices
     rand_range = 0.6;
     if rand() > 0.5
-        % turn overest to underest and vice versa
+        % turn over-estimate to under-estimate and vice versa
         guess_factors(idx) = 1 - (guess_factors(idx) - 1);
     end
     guess_factors(idx) = guess_factors(idx) + rand_range * rand() - rand_range/2;
@@ -53,7 +54,6 @@ end
 
 for idx = chosen_indices
     P_0(idx) = 1;
-    s_hat_1(idx) = guess_factors(idx) * s_hat_1(idx);
 
     % hardcoding
     P_0(idx) = 10;
@@ -77,22 +77,23 @@ Q(isnan(Q)) = 0; % get rid of NaN from dividing by 0
 % Q = zeros(size(P_0));
 
 % randomly perturb s_actual
-% rng(s_actual_rng_seed);
-% for i = 1:numel(chosen_indices)
-%     idx = chosen_indices(i);
-%     perturb_factor = 10^(2 * rand() - 1);
-%     s_actual(idx) = s_actual(idx) * perturb_factor;
-%     
-%     % automatically compensate by scaling P_0 and Q
-%     P_0(idx,idx) = P_0(idx,idx) * perturb_factor^2;
-%     Q(idx,idx) = Q(idx,idx) * perturb_factor^2;
-% end
+rng(s_actual_rng_seed);
+for i = 1:numel(chosen_indices)
+    idx = chosen_indices(i);
+    perturb_factor = 10^(2 * rand() - 1);
+    s_actual(idx) = s_actual(idx) * perturb_factor;
+    
+    % automatically compensate by scaling P_0 and Q
+    P_0(idx,idx) = P_0(idx,idx) * perturb_factor^2;
+    Q(idx,idx) = Q(idx,idx) * perturb_factor^2;
+end
 
 robot = robot_build_func(s_actual);
 
-% this is so important :)
-[sf1_y, sf1_Fs] = audioread('soundeffects\militarycreation.wav');
-[sf2_y, sf2_Fs] = audioread('soundeffects\villagercreation.wav');
+% form initial guesses
+for idx = chosen_indices
+    s_hat_1(idx) = guess_factors(idx) * s_actual(idx);
+end
 
 %% trajectory gen and simulate robot
 % % fund_periods = [6     4     5     7     3     8];

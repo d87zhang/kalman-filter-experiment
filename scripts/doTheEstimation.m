@@ -15,8 +15,3 @@ tic
                    est_robot, robot_set_param_func, robot_set_params_func);
 toc
 disp('Done estimating \[T]/');
-if rand() > 0.5
-    sound(sf1_y, sf1_Fs);
-else
-    sound(sf2_y, sf2_Fs);
-end
