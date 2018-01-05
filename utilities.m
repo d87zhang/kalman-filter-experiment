@@ -65,7 +65,7 @@ xlabel('Time(s)');
 ylabel('Observability matrix rank');
 legend('show');
 
-saveas(gcf, strcat(folderName, 'Observability matrix rank.fig'));
+saveas(gcf, strcat(folderName, 'Observability matrix rank.fig')); % TODO remove these saveas() calls
 
 %% save init conditions
 save('temp_saved_vars\init_cond.mat', 's_hat_1', '-append');
@@ -148,3 +148,18 @@ figure('units','normalized','outerposition',[0 0 1 1]);
 imagesc(corr_mat, [-1, 1]);
 colorbar;
 title(sprintf('Correlation matrix at iteration %d', iter));
+
+%% plot a parameter estimate along with a confidence interval
+figure('units','normalized','outerposition',[0 0 1 1]); hold on;
+
+param_idx = 1;
+
+interval_radius = reshape(P(param_idx,param_idx,:), numel(P(param_idx,param_idx,:)), 1).^(1/2);
+ciplot(s_hat(:,param_idx) - interval_radius, s_hat(:,param_idx) + interval_radius, t, 'm', ...
+              'DisplayName', 'confidence interval');
+plot(t, s_hat(:,param_idx), 'DisplayName', 'estimate');
+plot([0, t_f], s_actual(param_idx) * ones(1, 2), 'DisplayName', 'true value');
+
+title(['Estimate and confidence interval of ', getParamDescript(param_idx)]);
+legend('show');
+xlabel('Time(s)');

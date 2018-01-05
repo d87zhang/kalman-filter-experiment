@@ -12,7 +12,7 @@ quintic_traj_rng_seed = 666;
 % setups, see some defined in util/initSetups.m
 curr_setup = SPONG_PLANE_MAN_SETUP;
 % curr_setup = SIMPLE_PLANE_MAN_SETUP;
-% curr_setup = DH_PUMA_EST_3L_SETUP;
+% curr_setup = DH_PUMA_SETUP;
 
 n = curr_setup.n; % dimension of s
 m = curr_setup.m; % dimension of z
@@ -77,16 +77,16 @@ Q(isnan(Q)) = 0; % get rid of NaN from dividing by 0
 % Q = zeros(size(P_0));
 
 % randomly perturb s_actual
-rng(s_actual_rng_seed);
-for i = 1:numel(chosen_indices)
-    idx = chosen_indices(i);
-    perturb_factor = 10^(2 * rand() - 1);
-    s_actual(idx) = s_actual(idx) * perturb_factor;
-    
-    % automatically compensate by scaling P_0 and Q
-    P_0(idx,idx) = P_0(idx,idx) * perturb_factor^2;
-    Q(idx,idx) = Q(idx,idx) * perturb_factor^2;
-end
+% rng(s_actual_rng_seed);
+% for i = 1:numel(chosen_indices)
+%     idx = chosen_indices(i);
+%     perturb_factor = 10^(2 * rand() - 1);
+%     s_actual(idx) = s_actual(idx) * perturb_factor;
+%     
+%     % automatically compensate by scaling P_0 and Q
+%     P_0(idx,idx) = P_0(idx,idx) * perturb_factor^2;
+%     Q(idx,idx) = Q(idx,idx) * perturb_factor^2;
+% end
 
 robot = robot_build_func(s_actual);
 
@@ -96,6 +96,9 @@ for idx = chosen_indices
 end
 
 %% trajectory gen and simulate robot
+% TODO make sure everything in this section (including called functions are
+% well documented)
+
 % % fund_periods = [6     4     5     7     3     8];
 % fund_periods = 5 * ones(1, NUM_JOINTS);
 % t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
@@ -195,7 +198,8 @@ doTheEstimation;
 calcCorr;
 
 %% Plot results!
-folderName = 'C:\Users\Difei\Desktop\toyArm pics\currPlots\';
+% These folders must be created before hand
+folderName = 'C:\Users\Difei\Desktop\toyArm pics\currPlots\'; % TODO put this somewhere else or something
 tempFolderName = 'C:\Users\Difei\Desktop\toyArm pics\tempPlots\';
 YLIM_FACTOR = 3;
 
@@ -316,11 +320,32 @@ end
 plot(t, P_norm, 'DisplayName', 'Ps norm');
 
 title('Ps norm vs time');
-ylabel('Time(s)');
+xlabel('Time(s)');
 ylabel('something..');
 
 legend('show');
 saveas(gcf, strcat(folderName, '6-P norm.jpg'));
+
+% plot error on minimal set (theta)
+if isequal(curr_setup, SPONG_PLANE_MAN_SETUP)
+    theta_actual = curr_setup.theta_func(s_actual);
+    theta_est = zeros(NUM_ITER, length(theta_actual));
+    theta_rel_err = zeros(NUM_ITER, length(theta_actual));
+    for k = 1:NUM_ITER
+        theta_est(k,:) = curr_setup.theta_func(s_hat(k,:))';
+        theta_rel_err(k,:) = (theta_est(k,:) - theta_actual') ./ abs(theta_actual');
+    end
+    
+    figure('units','normalized','outerposition',[0 0 1 1]); hold on
+    for theta_idx = 1:length(theta_actual)
+        plot(t, theta_rel_err(:, theta_idx), 'DisplayName', sprintf('theta(%d)', theta_idx));
+    end
+    title('Theta relative error vs time');
+    xlabel('Time(s)');
+    ylabel('Theta values(unit varies)');
+    legend('show');
+    saveas(gcf, strcat(folderName, 'theta relative error.jpg'));
+end
 
 %% Generate textual results
 % ========================
