@@ -56,8 +56,8 @@ s_actual(41:50) = [0.34, 0, 0, 0, ...
                    0.3e-3, 0.4e-3, 0.3e-3, 0, 0, 0];
 s_actual(51:60) = [0.09, 0, 0, 0.09 * 0.032, ...
                    0.15e-3, 0.15e-3, 0.04e-3, 0, 0, 0];
-% DH_PUMA_SETUP.assumed_measurement_sigma = [2, 3, 1.5];
-DH_PUMA_SETUP.assumed_measurement_sigma = [2, 3, 1.5, 0.1, 0.1, 0.1];
+% DH_PUMA_SETUP.assumed_measurement_sigma = [0.5, 1, 0.4];
+DH_PUMA_SETUP.assumed_measurement_sigma = [0.5, 1, 0.4, 0.03, 0.03, 0.03];
 
 DH_PUMA_SETUP.traj_coef = traj_coef_file.ff_coef2;
 

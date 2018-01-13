@@ -90,7 +90,7 @@ none_contributors_idx = list_params(none_contributors_mask);
 figure('units','normalized','outerposition',[0 0 1 1]); hold on;
 
 for idx = chosen_indices
-    plot(t, reshape(P(idx, idx, :), 1, size(P, 3)), 'DisplayName', getParamDescript(idx));
+    plot(t, reshape(P(idx, idx, :), 1, size(P, 3)), 'DisplayName', getParamDescript(idx, EST_CENTER_OF_MASS_ALONE));
 end
 
 legend('show');
@@ -98,7 +98,7 @@ xlabel('Time(s)');
 ylabel('Variance');
 title('Variances vs time');
 
-saveas(gcf, strcat(tempFolderName, 'On diagonal P values.fig'));
+saveas(gcf, strcat(tempFolderName, 'On diagonal P values.jpg'));
 
 %% plotting part of H
 figure('units','normalized','outerposition',[0 0 1 1]); hold on;
@@ -138,6 +138,50 @@ ylim([-1, 1]);
 
 saveas(gcf, strcat(tempFolderName, 'Corr values vs time.jpg'));
 
+%% Plot corr value 2 - Plot for link 2 indices only
+figure('units','normalized','outerposition',[0 0 1 1]); hold on;
+
+link2_indices = [11, 12, 17];
+
+for i = link2_indices
+    for j = link2_indices
+        % only examine pairs where j > i
+        if j <= i
+            continue;
+        end
+        plot(t, reshape(corr(i,j,:), 1, size(corr, 3)), ...
+            'DisplayName', sprintf('corr(%d,%d)', i, j));
+    end
+end
+
+legend('show');
+title('Corr values vs time');
+ylim([-1, 1]);
+
+saveas(gcf, strcat(tempFolderName, 'Corr values vs time.jpg'));
+
+%% Plot corr value 3 - Plot for known dependent variables only
+figure('units','normalized','outerposition',[0 0 1 1]); hold on;
+
+link2_indices = [11, 12, 17];
+
+for i = chosen_indices
+    for j = chosen_indices
+        % only examine pairs where j > i
+        if (j <= i) || (() && ())
+            continue;
+        end
+        plot(t, reshape(corr(i,j,:), 1, size(corr, 3)), ...
+            'DisplayName', sprintf('corr(%d,%d)', i, j));
+    end
+end
+
+legend('show');
+title('Corr values vs time');
+ylim([-1, 1]);
+
+saveas(gcf, strcat(tempFolderName, 'Corr values vs time.jpg'));
+
 %% imagesc corr matrix
 % take a certain percentile for clim
 iter = 2000;
@@ -160,6 +204,6 @@ ciplot(s_hat(:,param_idx) - interval_radius, s_hat(:,param_idx) + interval_radiu
 plot(t, s_hat(:,param_idx), 'DisplayName', 'estimate');
 plot([0, t_f], s_actual(param_idx) * ones(1, 2), 'DisplayName', 'true value');
 
-title(['Estimate and confidence interval of ', getParamDescript(param_idx)]);
+title(['Estimate and confidence interval of ', getParamDescript(param_idx, EST_CENTER_OF_MASS_ALONE)]);
 legend('show');
 xlabel('Time(s)');

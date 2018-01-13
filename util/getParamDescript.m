@@ -1,4 +1,4 @@
-function descript = getParamDescript(param_idx)
+function descript = getParamDescript(param_idx, EST_CENTER_OF_MASS_ALONE)
     % Get description for a param index assuming a 10n parameter structure
 
     joint_num = floor((param_idx-1)/10) + 1;
@@ -9,11 +9,23 @@ function descript = getParamDescript(param_idx)
         case 1
             type_str = 'mass';
         case 2
-            type_str = 'CoM_x * m';
+            if EST_CENTER_OF_MASS_ALONE
+                type_str = 'CoM_x';
+            else
+                type_str = 'CoM_x * m';
+            end
         case 3
-            type_str = 'CoM_y * m';
+            if EST_CENTER_OF_MASS_ALONE
+                type_str = 'CoM_y';
+            else
+                type_str = 'CoM_y * m';
+            end
         case 4
-            type_str = 'CoM_z * m';
+            if EST_CENTER_OF_MASS_ALONE
+                type_str = 'CoM_z';
+            else
+                type_str = 'CoM_z * m';
+            end
         case 5
             type_str = 'I_xx';
         case 6

@@ -20,6 +20,8 @@ NUM_JOINTS = curr_setup.NUM_JOINTS;
 robot_build_func = curr_setup.robot_build_func;
 robot_set_params_func = curr_setup.robot_set_params_func;
 robot_set_param_func = curr_setup.robot_set_param_func;
+% assumed meas sigma should always be non-zero for better filter
+% performance, regardless of whether noise is actually injected into measurements
 assumed_measurement_sigma = curr_setup.assumed_measurement_sigma;
 s_actual = curr_setup.s_actual;
 traj_coef = curr_setup.traj_coef;
@@ -28,6 +30,7 @@ traj_coef = curr_setup.traj_coef;
 % m = 1;
 assumed_measurement_sigma = assumed_measurement_sigma(1:m);
 
+% injecting noise into measurements?
 % measurement_sigma = assumed_measurement_sigma;
 measurement_sigma = zeros(1, m);
 
@@ -36,7 +39,7 @@ P_0 = zeros(1, n);
 s_hat_1 = zeros(size(s_actual));
 
 % chosen_indices = 1:n; % parameters being estimated
-chosen_indices = [1, 2, 7, 11, 12, 17]; % parameters being estimated
+chosen_indices = [1, 2, 7, 11, 12, 17]; % parameters being estimated (Spong 2-DoF planar man setup)
 
 guess_factors = containers.Map(chosen_indices, 1.5 * ones(size(chosen_indices)));
 % randomize guess_factors a bit, with bounds
