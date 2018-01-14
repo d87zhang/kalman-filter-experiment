@@ -56,4 +56,4 @@ legend('show');
 xlabel('Time(s)');
 
 filename = regexprep(title_str, '*', 'x');
-saveas(gcf, strcat(tempFolderName, [filename, '.jpg'])); % TODO remove these saveas() calls
+% saveas(gcf, strcat(tempFolderName, [filename, '.jpg']));

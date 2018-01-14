@@ -1,3 +1,5 @@
+% Some (handy?) code snippets...
+
 %% Generate FF trajectory coefficients
 num_joints = 2;
 num_harmonics = 5;
@@ -34,12 +36,6 @@ simple_ff_coef(:,1:end-1) = normrnd(1, 0.15, num_joints, 2*num_harmonics) .* mea
 
 save('coef.mat', 'simple_ff_coef', '-append');
 
-%% make trajectory flat at the beginning
-flat_ending_idx = 2.5/dt + 1;
-q(1:flat_ending_idx, :) = repmat(q(flat_ending_idx, :), flat_ending_idx, 1);
-qd(1:flat_ending_idx, :) = zeros(size(qd(1:flat_ending_idx, :)));
-qdd(1:flat_ending_idx, :) = zeros(size(qdd(1:flat_ending_idx, :)));
-
 %% Plot of observability matrix's rank
 % rankFunc = @rank;
 rankFunc = @(A)(myRank(A, 1e7));
@@ -65,26 +61,7 @@ xlabel('Time(s)');
 ylabel('Observability matrix rank');
 legend('show');
 
-saveas(gcf, strcat(folderName, 'Observability matrix rank.fig')); % TODO remove these saveas() calls
-
-%% save init conditions
-save('temp_saved_vars\init_cond.mat', 's_hat_1', '-append');
-save('temp_saved_vars\init_cond.mat', 'P_0', '-append');
-
-%% load init conditions
-init_cond_file = matfile('temp_saved_vars\init_cond.mat');
-s_hat_1 = init_cond_file.s_hat_1;
-P_0 = init_cond_file.P_0;
-
-%% detect parameters that don't contribute in H
-H_threshold = 1e-5;
-
-none_contributors_mask = false(1, n);
-for idx = 1:n
-    none_contributors_mask(idx) = all(all(H(:,idx,:) < H_threshold));
-end
-list_params = 1:n;
-none_contributors_idx = list_params(none_contributors_mask);
+saveas(gcf, strcat(folderName, 'Observability matrix rank.fig'));
 
 %% plotting variances (on-diagonal P values)
 figure('units','normalized','outerposition',[0 0 1 1]); hold on;
@@ -99,24 +76,6 @@ ylabel('Variance');
 title('Variances vs time');
 
 saveas(gcf, strcat(tempFolderName, 'On diagonal P values.jpg'));
-
-%% plotting part of H
-figure('units','normalized','outerposition',[0 0 1 1]); hold on;
-
-% param_ids_of_interest = chosen_indices;
-param_ids_of_interest = [7];
-
-for i = 1:m
-    for j = param_ids_of_interest
-        plot(t, reshape(H(i,j,:), 1, size(H, 3)), ...
-            'DisplayName', sprintf('H(%d,%d)', i, j));
-    end
-end
-
-legend('show');
-title('Some H values');
-
-saveas(gcf, strcat(tempFolderName, 'Some H values.jpg'));
 
 %% Plot corr value
 figure('units','normalized','outerposition',[0 0 1 1]); hold on;
@@ -137,61 +96,6 @@ title('Corr values vs time');
 ylim([-1, 1]);
 
 saveas(gcf, strcat(tempFolderName, 'Corr values vs time.jpg'));
-
-%% Plot corr value 2 - Plot for link 2 indices only
-figure('units','normalized','outerposition',[0 0 1 1]); hold on;
-
-link2_indices = [11, 12, 17];
-
-for i = link2_indices
-    for j = link2_indices
-        % only examine pairs where j > i
-        if j <= i
-            continue;
-        end
-        plot(t, reshape(corr(i,j,:), 1, size(corr, 3)), ...
-            'DisplayName', sprintf('corr(%d,%d)', i, j));
-    end
-end
-
-legend('show');
-title('Corr values vs time');
-ylim([-1, 1]);
-
-saveas(gcf, strcat(tempFolderName, 'Corr values vs time.jpg'));
-
-%% Plot corr value 3 - Plot for known dependent variables only
-figure('units','normalized','outerposition',[0 0 1 1]); hold on;
-
-link2_indices = [11, 12, 17];
-
-for i = chosen_indices
-    for j = chosen_indices
-        % only examine pairs where j > i
-        if (j <= i) || (() && ())
-            continue;
-        end
-        plot(t, reshape(corr(i,j,:), 1, size(corr, 3)), ...
-            'DisplayName', sprintf('corr(%d,%d)', i, j));
-    end
-end
-
-legend('show');
-title('Corr values vs time');
-ylim([-1, 1]);
-
-saveas(gcf, strcat(tempFolderName, 'Corr values vs time.jpg'));
-
-%% imagesc corr matrix
-% take a certain percentile for clim
-iter = 2000;
-
-corr_mat = corr(:,:,iter);
-
-figure('units','normalized','outerposition',[0 0 1 1]);
-imagesc(corr_mat, [-1, 1]);
-colorbar;
-title(sprintf('Correlation matrix at iteration %d', iter));
 
 %% plot a parameter estimate along with a confidence interval
 figure('units','normalized','outerposition',[0 0 1 1]); hold on;

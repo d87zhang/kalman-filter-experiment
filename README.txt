@@ -10,6 +10,8 @@ dzhang323@hotmail.com
 
 Instructions
 ============
+First make sure you have the Peter Corke's robotics toolbox set up since the code depends on that.
+
 To include the necessary paths, run startup_toy.m (note: you might have to go to its directory in Matlab for this to work).
 
 The main script is main.m. Execute its numerous sections to setup, estimate and plot results. Various options are for the experiments are available as commented out code in the main script...

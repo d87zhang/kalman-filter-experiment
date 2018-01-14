@@ -1,4 +1,11 @@
 %% initialize
+
+% These folders must be created before hand for saving results.. If you
+% don't want to save results or something look for places where these
+% variables are used...
+folderName = 'NONE-EXISTENT-FOLDER-NAME/';
+tempFolderName = 'NONE-EXISTENT-FOLDER-NAME/';
+
 dt = 0.005;
 t_f = 10;
 NUM_ITER = t_f / dt + 1;
@@ -53,9 +60,6 @@ end
 
 P_0 = zeros(1, n);
 for idx = chosen_indices
-    P_0(idx) = 1;
-
-    % hardcoding
     P_0(idx) = 10;
     
     % auto tuning
@@ -65,10 +69,6 @@ for idx = chosen_indices
 %         P_0(idx) = (s_hat_1(idx) - s_actual(idx))^2;
 %     end
 end
-
-% fine tuning P_0...
-% P_0(1) = 1;
-% P_0(2) = 0.25;
 
 P_0 = diag(P_0);
 
@@ -97,60 +97,9 @@ for idx = chosen_indices
 end
 
 %% trajectory gen and simulate robot
-% TODO make sure everything in this section (including called functions are
-% well documented)
+% there are a couple of options here.. comment/uncomment to select!
 
-% % fund_periods = [6     4     5     7     3     8];
-% fund_periods = 5 * ones(1, NUM_JOINTS);
-% t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
-% 
-% [q, qd, qdd] = genFFS(traj_coef, t, fund_periods, t_offsets);
-
-% q = repmat(q(2.5 * 200:3 * 200,:),50,1);
-% q = q(1:numel(t),:);
-% qd = repmat(qd(2.5 * 200:3 * 200,:),50,1);
-% qd = qd(1:numel(t),:);
-% qdd = repmat(qdd(2.5 * 200:3 * 200,:),50,1);
-% qdd = qdd(1:numel(t),:);
-
-% ==============
-% Some kind of special traj
-% a1 = [1, 1.5];
-% b1 = [0, 0];
-% a2 = [1.5, -0.5];
-% b2 = [2, 1];
-% a3 = [-2, -0.75];
-% b3 = [-1, 0];
-% a4 = [0.5, -1];
-% b4 = [0.5, -1];
-% 
-% [ q2, qd2, qdd2 ] = linearTraj(a1, b1, t);
-% 
-% cat_point = round(length(t) /2);
-% q(cat_point:end, :) = q2(cat_point:end, :);
-% qd(cat_point:end, :) = qd2(cat_point:end, :);
-% qdd(cat_point:end, :) = qdd2(cat_point:end, :);
-
-% % q(:,2) = zeros(size(q(:,2)));
-% q(:,2) = pi * ones(size(q(:,2)));
-% qd(:,2) = zeros(size(qd(:,2)));
-% qdd(:,2) = zeros(size(qdd(:,2)));
-% 
-% % Add a component to q1 and its derivatives in order to up qdd1 by a
-% % constant amount, so that it stays above or below zero
-% % First scale down the existing trajectory though so the required constant
-% % gain is smaller.
-% scale_facotr = 1/8;
-% q(:,1) = scale_facotr * q(:,1);
-% qd(:,1) = scale_facotr * qd(:,1);
-% qdd(:,1) = scale_facotr * qdd(:,1);
-% 
-% qdd1_constant_gain = -20 * scale_facotr;
-% q(:,1) = q(:,1) + qdd1_constant_gain * 0.5 * t.^2;
-% qd(:,1) = qd(:,1) + qdd1_constant_gain * t;
-% qdd(:,1) = qdd(:,1) + qdd1_constant_gain;
-% ==============
-
+% =============================
 % generate quintic splines
 rng(quintic_traj_rng_seed);
 t_sites = 0:2:t_f;
@@ -163,20 +112,16 @@ q_spec = MAX_Y*rand(NUM_SITES, NUM_JOINTS) - MAX_Y/2;
 qd_spec = MAX_YD*rand(NUM_SITES, NUM_JOINTS) - MAX_YD/2;
 qdd_spec = MAX_YDD*rand(NUM_SITES, NUM_JOINTS) - MAX_YDD/2;
 
-% modify boundary condition
-% [~, t_begin_idx] = ismember(t_sites(1), t);
-% assert(all(t_begin_idx));
-% q_spec(1,:) = q(t_begin_idx,:);
-% qd_spec(1,:) = qd(t_begin_idx,:);
-% qdd_spec(1,:) = qdd(t_begin_idx,:);
-
 [q, qd, qdd] = quinticSpline(q_spec, qd_spec, qdd_spec, t_sites, t);
-% [q_spl, qd_spl, qdd_spl] = quinticSpline(q_spec, qd_spec, qdd_spec, ...
-%                                          t_sites, t(t_begin_idx:end));
+% =============================
 
-% q(t_begin_idx:end,:) = q_spl;
-% qd(t_begin_idx:end,:) = qd_spl;
-% qdd(t_begin_idx:end,:) = qdd_spl;
+% =============================
+% generate finite fourier series (FFS) trajectories
+% fund_periods = [6     4     5     7     3     8];
+% t_offsets = [1.4, -0.8, 0.7, 1.2 0.3 -2.1];
+% 
+% [q, qd, qdd] = genFFS(traj_coef, t, fund_periods, t_offsets);
+% =============================
 
 %% generate torques and measurements
 % Generate required torque for this trajectory
@@ -199,9 +144,6 @@ doTheEstimation;
 calcCorr;
 
 %% Plot results!
-% These folders must be created before hand
-folderName = 'C:\Users\Difei\Desktop\toyArm pics\currPlots\'; % TODO put this somewhere else or something
-tempFolderName = 'C:\Users\Difei\Desktop\toyArm pics\tempPlots\';
 YLIM_FACTOR = 3;
 
 % Plot of H's condition number
