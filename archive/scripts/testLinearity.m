@@ -1,3 +1,5 @@
+% NOTE: this script is probably outdated!
+
 % Pre-requisites: trajectory is prepared to sample from (q, qd, qdd,
 % NUM_ITER are populated); also other things from the regular estimation
 % setup (like robot, etc.)...

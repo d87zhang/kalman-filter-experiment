@@ -1,50 +1,59 @@
-% Test how correlation differs between trajectories - a simple case
-% Requires the robot to be ready as well as initial setup for estimation
-% (e.g. chosen_indices, P_0, s_hat_1)
+% Plot how correlation estimates for a parameter pair differ between trajectories
+% requires some initial setup (running the first code section of
+% main.m)
 
-assert(length(chosen_indices) == 2);
+%% Step 1 - do estimation for the various trajectories
+quintic_traj_rng_seeds = [666, 555, 444, 333, 222];
+num_trajs = length(quintic_traj_rng_seeds);
 
-num_trajs = 4;
-a_array = cell(1, num_trajs);
-b_array = cell(1, num_trajs);
-
-a_array(1) = {[1, 1.5]};
-b_array(1) = {[0, 0]};
-a_array(2) = {[1.5, -0.5]};
-b_array(2) = {[2, 1]};
-a_array(3) = {[-2, -0.75]};
-b_array(3) = {[-1, 0]};
-a_array(4) = {[0.5, -1]};
-b_array(4) = {[0.5, -1]};
-
-corr_per_traj = zeros(NUM_ITER, num_trajs);
-i = chosen_indices(1); % param indices
-j = chosen_indices(2);
+corr_over_trajs = zeros([size(P_0), NUM_ITER, num_trajs]);
 for traj_idx = 1:num_trajs
-    a = a_array{traj_idx};
-    b = b_array{traj_idx};
-    [ q, qd, qdd ] = linearTraj(a, b, t);
+    % ========================================
+    % (quintic splines) trajectory generation
+    rng(quintic_traj_rng_seeds(traj_idx));
+    t_sites = 0:2:t_f;
+    NUM_SITES = length(t_sites);
+
+    MAX_Y = 2.5;
+    MAX_YD = 6;
+    MAX_YDD = 20;
+    q_spec = MAX_Y*rand(NUM_SITES, NUM_JOINTS) - MAX_Y/2;
+    qd_spec = MAX_YD*rand(NUM_SITES, NUM_JOINTS) - MAX_YD/2;
+    qdd_spec = MAX_YDD*rand(NUM_SITES, NUM_JOINTS) - MAX_YDD/2;
+
+    [q, qd, qdd] = quinticSpline(q_spec, qd_spec, qdd_spec, t_sites, t);
+    % ========================================
     
-    % generic stuff (wrt traj_idx)
+    % generate measurements
     torque = robot.rne([q, qd, qdd], robot.gravity, zeros(1,6));
+    rng(65535);
     genMeas;
+    
+    % estimate parameters
     doTheEstimation;
     calcCorr;
     
-    corr_per_traj(:,traj_idx) = reshape(corr(i,j,:), ...
-                                        size(corr_per_traj(:,traj_idx)));
+    % record corr estimates
+    corr_over_trajs(:,:,:,traj_idx) = corr;
 end
 
-% plot results
+disp('Done step 1!');
+
+%% Step 2 - plot results
+param_idx1 = 1;
+param_idx2 = 2;
+
 figure('units','normalized','outerposition',[0 0 1 1]); hold on;
-
 for traj_idx = 1:num_trajs
-    plot(t, corr_per_traj(:,traj_idx), 'DisplayName', sprintf('traj #%d', traj_idx));
+    plot_target = corr_over_trajs(param_idx1,param_idx2,:,traj_idx);
+    plot(t, reshape(plot_target, 1, numel(plot_target)), 'DisplayName', sprintf('traj - %d', traj_idx));
 end
 
+title_str = ['Correlation est. between ', getParamDescript(param_idx1, EST_CENTER_OF_MASS_ALONE), ' and ', ...
+             getParamDescript(param_idx2, EST_CENTER_OF_MASS_ALONE), ' over diff trajs'];
+title(title_str);
 legend('show');
-title(sprintf('Corr values vs time for params (%d, %d), CoM estimated alone: %s', ...
-      i, j, BOOL_TO_STRING{EST_CENTER_OF_MASS_ALONE + 1}));
-ylim([-1, 1]);
+xlabel('Time(s)');
 
-saveas(gcf, strcat(tempFolderName, 'Corr values vs time over all trajs.jpg'));
+filename = regexprep(title_str, '*', 'x');
+saveas(gcf, strcat(tempFolderName, [filename, '.jpg'])); % TODO remove these saveas() calls

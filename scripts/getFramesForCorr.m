@@ -36,8 +36,9 @@ toc
 % movie(corr_frames, 1, 15);
 
 %% write the video to file
-vid_writer = VideoWriter([tempFolderName, 'corr over time.avi']);
-open(vid_writer);
-writeVideo(vid_writer, corr_frames);
-close(vid_writer);
+disp('Note: uncomment code below this disp call() to save the video');
+% vid_writer = VideoWriter([tempFolderName, 'corr over time.avi']);
+% open(vid_writer);
+% writeVideo(vid_writer, corr_frames);
+% close(vid_writer);
 

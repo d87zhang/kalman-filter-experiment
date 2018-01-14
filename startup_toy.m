@@ -1,10 +1,9 @@
-% let's hope the current directory is here?
+% only works if the current directory is the directory containing this
+% file...
 addpath('fooling-code');
-addpath('control');
 addpath('util');
 addpath('robos');
 addpath('scripts');
-addpath('traj-gen');
 addpath('tests');
 
 initSetups
