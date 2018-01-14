@@ -34,10 +34,6 @@ assumed_measurement_sigma = assumed_measurement_sigma(1:m);
 % measurement_sigma = assumed_measurement_sigma;
 measurement_sigma = zeros(1, m);
 
-% Set up initial conditions (initial guess and P_0)
-P_0 = zeros(1, n);
-s_hat_1 = zeros(size(s_actual));
-
 % chosen_indices = 1:n; % parameters being estimated
 chosen_indices = [1, 2, 7, 11, 12, 17]; % parameters being estimated (Spong 2-DoF planar man setup)
 
@@ -55,6 +51,7 @@ end
 % guess_factors(1) = 2;
 % guess_factors(2) = 2;
 
+P_0 = zeros(1, n);
 for idx = chosen_indices
     P_0(idx) = 1;
 
@@ -94,6 +91,7 @@ Q(isnan(Q)) = 0; % get rid of NaN from dividing by 0
 robot = robot_build_func(s_actual);
 
 % form initial guesses
+s_hat_1 = s_actual;
 for idx = chosen_indices
     s_hat_1(idx) = guess_factors(idx) * s_actual(idx);
 end
